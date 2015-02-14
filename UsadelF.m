@@ -4,20 +4,20 @@ function [gg1,gg2,gt,dgt] = UsadelF(exchange,spinorbit)
     % Make sure the BVP package files are in the current Matlab search path
     addpath('BVP/')
     
-    % Initialize the boundary value problem solver
-    % The arguments to 'bvp6c' 
-    options = bvpset('AbsTol',1e-06,'RelTol',1e-06,'Nmax',2000);
-    solinit = bvpinit(linspace(0,1,100),@mat4init);
-    sol = bvp6c(@mat4ode,@mat4bc,solinit,options);
+    % Initialize the boundary value problem solve with an initial guess
+    % given by the function 'mat4init', a from
+    % 'mat4init' 'mat4initThe first command sets
+    % the error tolerances, the second defines the initial guess for the
+    % solution using the function 'mat4init', and the final one solves the
+    % differential equation using the Jacobian 'mat4ode' and boundary cond
+    options = bvpset('AbsTol',1e-06,'RelTol',1e-06,'Nmax',2000);            % Error tolerances
+    solinit = bvpinit(linspace(0,1,100),@mat4init);                         % Initial guess given by 'mat4init'
+    sol = bvp6c(@mat4ode,@mat4bc,solinit,options);                          % Solve the differential equation using the Jacobian 'mat4ode',
+                                                                            % boundary conditions 'mat4bc', and initial guess 'solinit'
 
-%BVP is boundary value solver (installed separately)
-%takes as its input functions mat4ode etx defined below. Function handle
-%@ lets matlab know to expect a function as the argument here. The inputs
-%are therefore the ode, boundary conditions and initial guess. Options sets
-%some parameters for the calulational accuracy and number of steps.
 
-xint = linspace(0,1);%We want 100 solutions (sol) for different x between 0 and 1.
-Sxint = deval(sol,xint);%deval returns solutions sol to a differential equation, using the bvp6c package above
+    xint = linspace(0,1);%We want 100 solutions (sol) for different x between 0 and 1.
+    Sxint = deval(sol,xint);%deval returns solutions sol to a differential equation, using the bvp6c package above
 
 gg1 = Sxint(1,:);%ie here have solution 1 to diff eqn for all x values
 gg2 = Sxint(3,:);%here have solution 3 for all x
@@ -39,19 +39,18 @@ dggt4 = Sxint(16,:);
 
 % ===================================================================
 function dydx = mat4ode(x,y)
+    % Extract the gamma matrices and their derivatives drom the state vector
+    g   = reshape(y( 1: 4), 2, 2)';
+    dg  = reshape(y( 5: 8), 2, 2)';
+    gt  = reshape(y( 9:12), 2, 2)';
+    dgt = reshape(y(13:16), 2, 2)';
 
-global Ethf
-global E
-global hx
-global hy
-global hz
-global sigmax
-global sigmay
-global sigmaz
-global A
+    % Calculate the normalization matrices
+    N  = inv( eye(2) - g*gt );
+    Nt = inv( eye(2) - gt*g );
 
-% Define the elements of the gamma, tilde{gamma} matrices
-% and their derivatives
+
+
 g1 = y(1);
 g2 = y(3);
 g3 = y(5);
@@ -78,22 +77,9 @@ gt = [gt1,gt2;gt3,gt4];
 dg = [dg1, dg2; dg3, dg4];
 dgt = [dgt1, dgt2; dgt3, dgt4];
 
-% The elements of the normalization matrix N 
-denom = (g1*gt1 + g2*gt3 + g3*gt2 + g4*gt4 - g1*g4*gt1*gt4 + g1*g4*gt2*gt3 + g2*g3*gt1*gt4 - g2*g3*gt2*gt3 - 1)^(-1);
-N1 = denom*(g3*gt2 + g4*gt4 -1);
-N2 = denom*(-g1*gt2 - g2*gt4);
-N3 = denom*(-g3*gt1 - g4*gt3);
-N4 = denom*(g1*gt1 + g2*gt3 - 1);
-
-% The elements of the normalization matrix tilde{N}
-denomt = (g1*gt1 + g2*gt3 + g3*gt2 + g4*gt4 - g1*g4*gt1*gt4 + g1*g4*gt2*gt3 + g2*g3*gt1*gt4 - g2*g3*gt2*gt3 - 1)^(-1);
-Nt1 = denomt*(gt3*g2 + gt4*g4 - 1);
-Nt2 = denomt*(-gt1*g2 - gt2*g4);
-Nt3 = denomt*(-gt3*g1 - gt4*g3);
-Nt4 = denomt*(gt1*g1 + gt2*g3 - 1);
-
-N = [N1, N2; N3, N4];
-Nt = [Nt1, Nt2; Nt3, Nt4];
+% Calculate the normalization matrices N and \tilde{N}
+N  = inv( eye(2) - g*gt );
+Nt = inv( eye(2) - gt*g );
 
 % We will now write the Usadel equations for gamma, tilde{gamma} in the
 % form partial_x^2 \gamma = tot. The tot-matrix then includes first
@@ -146,6 +132,8 @@ dydx = [dg1; tot11;
     dgt2; tott12;
     dgt3; tott21;
     dgt4; tott22];
+
+end
 
 % =======================================================================
 function res = mat4bc(ya,yb)

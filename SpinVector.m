@@ -42,6 +42,19 @@ classdef SpinVector
         
         
         
+        % Overloading of display functions
+        function display(self)
+            name = inputname(1);
+            disp(sprintf(':: %s.x:', name));
+            disp([self.x]);
+            disp(sprintf('\n:: %s.y:', inputname(1)));
+            disp([self.y]);
+            disp(sprintf('\n:: %s.z:', inputname(1)));
+            disp([self.z]);
+        end
+        
+        
+        
         % Overloading of unary operators and functions
         function result = conj(self)
             % This overloads the complex conjugation function
