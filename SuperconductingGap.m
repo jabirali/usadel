@@ -1,5 +1,5 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Created 2015-02-15
+% Created 2015-02-14
 % Updated 2015-02-15
 
 function gap = SuperconductingGap(states, energies, temperature, cutoff, scaling)
@@ -7,19 +7,28 @@ function gap = SuperconductingGap(states, energies, temperature, cutoff, scaling
     % in a superconductor and the temperature of the system, and calculates
     % the superconducting gap of the material.
     %
-    % Input:    singlet     
-    %           temperature The temperature of the material
-    %           cutoff      The Debye frequency cutoff of the material
-    %           scaling     The superconducting gap is proportional to this
-    %                       scaling constant (which is usually called N₀λ)
-
-    %singlet = @(energy) gap./sqrt(gap.^2 + energy.^2) x-dependent!
-
+    % Input:   
+    %   states      This should be a vector containing either State objects
+    %               (numerical solution of the Usadel eq) or complex numbers
+    %               (the singlet components of the solutions).
+    %   energies    This should be a vector of energies which corresponds
+    %               to the states above.
+    %   temperature The temperature of the material.
+    %   cutoff      The Debye frequency cutoff of the material.
+    %   scaling     The superconducting gap is proportional to this
+    %               scaling constant (which is usually written N₀λ).
+    % 
+    % Output:  
+    %   gap         The superconducting gap (in general a complex number)
     
-    % Calculate and collect the singlet components of the states
+    % Extract the singlet components from the states, if necessary
     singlets = zeros(1,numel(states));
-    for n=1:length(singlets)
-        singlets(n) = states(n).singlet;
+    if isa(states, 'State')
+        for n=1:length(singlets)
+            singlets(n) = states(n).singlet;
+        end
+    else
+        singlets = states;
     end
 
     % Create a cubic interpolation of the numerical data above, multiplied

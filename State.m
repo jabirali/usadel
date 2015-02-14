@@ -1,5 +1,5 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Created 2015-02-15
+% Created 2015-02-14
 % Updated 2015-02-15
 
 classdef State
