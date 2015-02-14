@@ -37,7 +37,4 @@ function gap = SuperconductingGap(states, energies, temperature, cutoff, scaling
     
     % Perform a numerical integration of the interpolation up to the cutoff
     gap    = scaling * integral(kernel, 0, cutoff);
-    
-    %int = @(x,energy) real(singlet(x,energy)) .* tanh(energy/(2.*temperature));
-    %gap = @(x) integral(int(x,energy), 0, cutoff);
 end

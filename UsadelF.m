@@ -3,7 +3,7 @@
 % Created 2015-02-15
 % Updated 2015-02-15
 
-function [gg1,gg2,gt,dgt] = UsadelF(exchange, spinorbit, bulk)
+function [gg1,gg2,gt,dgt] = UsadelF(state, exchange, spinorbit)
     % This function
     
     % Make sure the BVP package files are in the current Matlab search path
@@ -16,19 +16,11 @@ function [gg1,gg2,gt,dgt] = UsadelF(exchange, spinorbit, bulk)
     % solution using the function 'mat4init', and the final one solves the
     % differential equation using the Jacobian 'mat4ode' and boundary cond
 
-    % If the 'bulk' parameter is true, use the BCS bulk solution as the
-    % initial guess when solving the differential equation; if not, use an
-    % empty state (g = gt = 0) as the guess instead.
-    if bulk
-        y0 = State.Bulk(energy, gap).vectorize;
-    else
-        y0 = State.vectorize;
-    end
 
     
     options  = bvpset('AbsTol',1e-06,'RelTol',1e-06,'Nmax',2000);            % Error tolerances
     solinit  = bvpinit(linspace(0,1,100),@mat4init);                         % Initial guess given by 'mat4init'
-    system   = bvp6c(@mat4ode,@mat4bc,y0,options);                          % Solve the differential equation using the Jacobian 'mat4ode',
+    system   = bvp6c(@mat4ode,@mat4bc,state,options);                          % Solve the differential equation using the Jacobian 'mat4ode',
                                                                             % boundary conditions 'mat4bc', and initial guess 'solinit'
 
 

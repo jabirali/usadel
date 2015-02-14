@@ -4,7 +4,21 @@
 % Updated 2015-02-15
 
 
-function MainSF(BCS)
+function MainSF(bulk)
+    bulk = true;
+
+
+    % If the 'bulk' parameter is true, use the BCS bulk solution as the
+    % initial guess when solving the differential equation; if not, use an
+    % empty state (g = gt = 0) as the guess instead.
+    if bulk
+        state = State.Bulk(energy, gap).vectorize;
+    else
+        state = State.vectorize;
+    end
+
+
+
 %
 % Input:    
 %           BCS     'true':  use bulk solution as the initial guess for g;
@@ -58,49 +72,6 @@ xvec = linspace(0,1);
 xx = length(linspace(0,1));
 
 % gs (as in plural of g) 
-gs = 2
-
-ggf1 = zeros(length(Evec),xx);
-ggf2 = zeros(length(Evec),xx);
-ggf3 = zeros(length(Evec),xx);
-ggf4 = zeros(length(Evec),xx);
-
-ggtf1 = zeros(length(Evec),xx);
-ggtf2 = zeros(length(Evec),xx);
-ggtf3 = zeros(length(Evec),xx);
-ggtf4 = zeros(length(Evec),xx);
-
-dggf1 = zeros(length(Evec),xx);
-dggf2 = zeros(length(Evec),xx);
-dggf3 = zeros(length(Evec),xx);
-dggf4 = zeros(length(Evec),xx);
-
-dggtf1 = zeros(length(Evec),xx);
-dggtf2 = zeros(length(Evec),xx);
-dggtf3 = zeros(length(Evec),xx);
-dggtf4 = zeros(length(Evec),xx);
-
-% Predefine matrices of zero for the initial guesses
-ggf1_init = zeros(length(Evec),xx);
-ggf2_init = zeros(length(Evec),xx);
-ggf3_init = zeros(length(Evec),xx);
-ggf4_init = zeros(length(Evec),xx);
-
-ggtf1_init = zeros(length(Evec),xx);
-ggtf2_init = zeros(length(Evec),xx);
-ggtf3_init = zeros(length(Evec),xx);
-ggtf4_init = zeros(length(Evec),xx);
-
-dggf1_init = zeros(length(Evec),xx);
-dggf2_init = zeros(length(Evec),xx);
-dggf3_init = zeros(length(Evec),xx);
-dggf4_init = zeros(length(Evec),xx);
-
-dggtf1_init = zeros(length(Evec),xx);
-dggtf2_init = zeros(length(Evec),xx);
-dggtf3_init = zeros(length(Evec),xx);
-dggtf4_init = zeros(length(Evec),xx);
-
 
 % Define vectors with the values we want to loop over - note no phasevec
 % for SF only. 
@@ -177,29 +148,6 @@ for f=1:length(hzvec)
                         N = inv(id-gammaf*gammatf);
                         Nt = inv(id-gammatf*gammaf);
         
-                        NF(k,j) = 0.5*trace(N*(id+gammaf*gammatf));
-        
-                        % Also get triplet components to identify LRT
-        
-                        tripmat=2*N*gammaf;
-                        tripnoproj(k,j)=0.5*(tripmat(1,2)+tripmat(2,1));
-                        trip1(k,j)=0.5*(-1i*(tripmat(1,1)+tripmat(2,2)));
-                        trip2(k,j)=0.5*(tripmat(1,1)-tripmat(2,2)); %Wrong order...
-                        singfn(k,j)=0.5*(tripmat(1,2)-tripmat(2,1));
-                        
-                        NFarray{f,h}=NF;
-                        tripnoprojarray{f,h}=tripnoproj;
-                        triparray1{f,h}=trip1;
-                        triparray2{f,h}=trip2;
-                        singarray{f,h}=singfn;
-                        
-                        tripvec=[trip2(k,j),trip1(k,j),tripnoproj(k,j)];
-                        fieldvec=[hx,hy,hz];
-                        reperpcomp(k,j)=norm(real(cross(tripvec,fieldvec)))/norm(fieldvec);
-                        
-                        reperpcomparray{f,h}=reperpcomp;
-                       
-                        
                     end %end j loop
         end % end k
     end %end h
