@@ -1,3 +1,7 @@
+% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
+% Created 2015-02-14
+% Updated 2015-02-14
+
 function [singlet,tripletS,tripletL] = Decomposition(green, exchange)
     % This function takes a Green's function matrix in spin space as input,
     % and splits the Green's function into a singlet component, a
