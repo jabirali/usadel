@@ -1,10 +1,11 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Last updated 2015-02-15
+% Created 2015-02-14
+% Updated 2015-02-15
 
 classdef SpinVector
     % Define a data structure to describe objects with both a 3x1 vector
     % structure in geometric space and a 2x2 matrix structure in spin
-    % space, such as the Pauli vector, and in   general SU(2) vector fields.
+    % space, such as the Pauli vector, and in general SU(2) vector fields.
     
     % Define internal variables for the data structure
     properties (GetAccess=public, SetAccess=public)
@@ -140,6 +141,11 @@ classdef SpinVector
             end
             
             result = lhs.x^2 + lhs.y^2 + lhs.z^2;
+        end
+        
+        function result = mrdivide(lhs,rhs)
+            % This overloads the matrix division operator            
+            result = SpinVector(lhs.x/rhs, lhs.y/rhs, lhs.z/rhs);
         end
     end
 end
