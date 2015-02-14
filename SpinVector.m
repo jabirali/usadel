@@ -45,13 +45,13 @@ classdef SpinVector
         % Overloading of display functions
         function display(self)
             name = inputname(1);
-            disp(sprintf(':: %s.x:', name));
+            disp(sprintf(':: %s.x:    [projection on x-axis]', name));
             disp([self.x]);
-            disp(sprintf('\n:: %s.y:', inputname(1)));
+            disp(sprintf('\n:: %s.y:    [projection on y-axis]', inputname(1)));
             disp([self.y]);
-            disp(sprintf('\n:: %s.z:', inputname(1)));
+            disp(sprintf('\n:: %s.z:    [projection on z-axis]', inputname(1)));
             disp([self.z]);
-        end
+        end        
         
         
         

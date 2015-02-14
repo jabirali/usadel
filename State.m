@@ -72,7 +72,7 @@ classdef State
             disp([self.dg]);
             disp(sprintf('\n:: %s.gt:     [Riccati parameter γ~]', inputname(1)));
             disp([self.gt]);
-            disp(sprintf('\n:: %s.dgt:    [Derivative dγ~/dx]:', inputname(1)));
+            disp(sprintf('\n:: %s.dgt:    [Derivative dγ~/dx]', inputname(1)));
             disp([self.dgt]);
         end
 

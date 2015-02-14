@@ -8,5 +8,10 @@ function [X,E,G,D] = CriticalTemperature(states, energies, temperature, cutoff,s
 
 % Returns positions, energies, greens functions, gaps, crticial temps?
 
+
+    UsadelF;
+    UsadelS;
+    SuperconductingGap;
+
 end
 

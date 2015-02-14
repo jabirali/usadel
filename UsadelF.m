@@ -75,8 +75,8 @@ part1t={A{1}+g*conj(A{1})*gt, A{2}+g*conj(A{2})*gt, A{3}+g*conj(A{3})*gt};
 part2t={N*part1t{1},N*part1t{2},N*part1t{3}};
 
 %Remember I have the "wrong" normalisation here as I divide through by Ethf
-orb = ((A{1}*A{1}+A{2}*A{2}+A{3}*A{3})*g-g*(conj(A{1})*conj(A{1})+conj(A{2})*conj(A{2})+conj(A{3})*conj(A{3})) + 2*(ant{1}*part2{1}+ant{2}*part2{2}+ant{3}*part2{3}) + 2i*(dg*Nt*(conj(A{3})+gt*A{3}*g)+(A{3}+g*conj(A{3})*gt)*N*dg))/Ethf; 
-orbt = ((conj(A{1})*conj(A{1})+conj(A{2})*conj(A{2})+conj(A{3})*conj(A{3}))*gt-gt*(A{1}*A{1}+A{2}*A{2}+A{3}*A{3}) + 2*(antt{1}*part2t{1}+antt{2}*part2t{2}+antt{3}*part2t{3}) - 2i*(dgt*N*(A{3}+g*conj(A{3})*gt)+(conj(A{3})+gt*A{3}*g)*Nt*dgt))/Ethf;
+orb = A^2 * g - g * conj(A)^2 + 2*(ant{1}*part2{1}+ant{2}*part2{2}+ant{3}*part2{3}) + 2i*(dg*Nt*(conj(A{3})+gt*A{3}*g)+(A{3}+g*conj(A{3})*gt)*N*dg))/Ethf; 
+orbt = conj(A)^2 * gt - gt * A^2 + 2*(antt{1}*part2t{1}+antt{2}*part2t{2}+antt{3}*part2t{3}) - 2i*(dgt*N*(A{3}+g*conj(A{3})*gt)+(conj(A{3})+gt*A{3}*g)*Nt*dgt))/Ethf;
 
 tot = -2*M - spin + orb;
 tott = -2*Mt-spint + orbt;
@@ -103,21 +103,6 @@ end
 
 % =======================================================================
 function res = mat4bc(ya,yb)
-
-global ggs1;
-global ggs2;
-global ggs3;
-global ggs4;
-
-global ggts1;
-global ggts2;
-global ggts3;
-global ggts4;
-
-global zeta
-global jj
-
-global A
 
 % Vil bruke verdien av Green's function i S  ved interface i
 % grensebetingelsen
@@ -219,5 +204,4 @@ res = [dg1_x0 - Tot(1,1);
     dgt1_xd - Tott2(1,1);
     dgt2_xd - Tott2(1,2);
     dgt3_xd - Tott2(2,1);
-    dgt4_xd - Tott2(2,2)];
-
+    dgt4_xd - Tott2(2,2)];z
