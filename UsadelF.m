@@ -1,4 +1,9 @@
-function [gg1,gg2,gt,dgt] = UsadelF(exchange,spinorbit)
+% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
+% Based on a similar program by Dr. Sol Jacobsen
+% Created 2015-02-15
+% Updated 2015-02-15
+
+function [gg1,gg2,gt,dgt] = UsadelF(exchange, spinorbit, bulk)
     % This function
     
     % Make sure the BVP package files are in the current Matlab search path
@@ -10,34 +15,34 @@ function [gg1,gg2,gt,dgt] = UsadelF(exchange,spinorbit)
     % the error tolerances, the second defines the initial guess for the
     % solution using the function 'mat4init', and the final one solves the
     % differential equation using the Jacobian 'mat4ode' and boundary cond
-    options = bvpset('AbsTol',1e-06,'RelTol',1e-06,'Nmax',2000);            % Error tolerances
-    solinit = bvpinit(linspace(0,1,100),@mat4init);                         % Initial guess given by 'mat4init'
-    sol = bvp6c(@mat4ode,@mat4bc,solinit,options);                          % Solve the differential equation using the Jacobian 'mat4ode',
+
+    % If the 'bulk' parameter is true, use the BCS bulk solution as the
+    % initial guess when solving the differential equation; if not, use an
+    % empty state (g = gt = 0) as the guess instead.
+    if bulk
+        y0 = State.Bulk(energy, gap).vectorize;
+    else
+        y0 = State.vectorize;
+    end
+
+    
+    options  = bvpset('AbsTol',1e-06,'RelTol',1e-06,'Nmax',2000);            % Error tolerances
+    solinit  = bvpinit(linspace(0,1,100),@mat4init);                         % Initial guess given by 'mat4init'
+    system   = bvp6c(@mat4ode,@mat4bc,y0,options);                          % Solve the differential equation using the Jacobian 'mat4ode',
                                                                             % boundary conditions 'mat4bc', and initial guess 'solinit'
 
 
-    xint = linspace(0,1);%We want 100 solutions (sol) for different x between 0 and 1.
-    Sxint = deval(sol,xint);%deval returns solutions sol to a differential equation, using the bvp6c package above
+    xs = linspace(0,1);%We want 100 solutions (sol) for different x between 0 and 1.
+    ys = deval(system,xs);%deval returns solutions sol to a differential equation, using the bvp6c package above
 
-gg1 = Sxint(1,:);%ie here have solution 1 to diff eqn for all x values
-gg2 = Sxint(3,:);%here have solution 3 for all x
-gg3 = Sxint(5,:);
-gg4 = Sxint(7,:);
-ggt1 = Sxint(9,:);
-ggt2 = Sxint(11,:);
-ggt3 = Sxint(13,:);
-ggt4 = Sxint(15,:);
+    % Extract the gamma matrices and their derivatives drom the state vector
+    gs   = reshape(ys( 1: 4), 2, 2)';
+    dgs  = reshape(ys( 5: 8), 2, 2)';
+    gts  = reshape(ys( 9:12), 2, 2)';
+    dgts = reshape(ys(13:16), 2, 2)';
+end
 
-dgg1 = Sxint(2,:);%the even solutions give the differential of gamma, which are also solutions of a bvp
-dgg2 = Sxint(4,:);% the inputs in mat4ode and mat4bc thus include as evens the corresponding expressions for  
-dgg3 = Sxint(6,:);%gamma, \tilde(gamma) and their derivatives
-dgg4 = Sxint(8,:);
-dggt1 = Sxint(10,:);
-dggt2 = Sxint(12,:);
-dggt3 = Sxint(14,:);
-dggt4 = Sxint(16,:);
 
-% ===================================================================
 function dydx = mat4ode(x,y)
     % Extract the gamma matrices and their derivatives drom the state vector
     g   = reshape(y( 1: 4), 2, 2)';
@@ -50,37 +55,6 @@ function dydx = mat4ode(x,y)
     Nt = inv( eye(2) - gt*g );
 
 
-
-g1 = y(1);
-g2 = y(3);
-g3 = y(5);
-g4 = y(7);
-gt1 = y(9);
-gt2 = y(11);
-gt3 = y(13);
-gt4 = y(15);
-
-dg1 = y(2);
-dg2 = y(4);
-dg3 = y(6);
-dg4 = y(8);
-dgt1 = y(10);
-dgt2 = y(12);
-dgt3 = y(14);
-dgt4 = y(16);
-
-% gamma, tilde{gamma}
-g = [g1,g2;g3,g4];
-gt = [gt1,gt2;gt3,gt4];
-
-% Their derivatives
-dg = [dg1, dg2; dg3, dg4];
-dgt = [dgt1, dgt2; dgt3, dgt4];
-
-% Calculate the normalization matrices N and \tilde{N}
-N  = inv( eye(2) - g*gt );
-Nt = inv( eye(2) - gt*g );
-
 % We will now write the Usadel equations for gamma, tilde{gamma} in the
 % form partial_x^2 \gamma = tot. The tot-matrix then includes first
 % order-derivatives and the terms depending on E, h, and Delta. 
@@ -88,8 +62,8 @@ Nt = inv( eye(2) - gt*g );
 M = dg*Nt*gt*dg;
 Mt = dgt*N*g*dgt;
 
-spin = 2*1i*E*g/Ethf + 1i*(hx*sigmax + hy*sigmay + hz*sigmaz)*g/Ethf - 1i*g*(hx*sigmax + hy*conj(sigmay) + hz*sigmaz)/Ethf;
-spint = 2*1i*E*gt/Ethf + 1i*gt*(hx*sigmax + hy*sigmay + hz*sigmaz)/Ethf - 1i*(hx*sigmax + hy*conj(sigmay) + hz*sigmaz)*gt/Ethf;
+spin  = 2i*E*g/Ethf  + i*h*Pauli*g/Ethf  - i*g*h*conj(Pauli)/Ethf;
+spint = 2i*E*gt/Ethf + i*gt*h*Pauli/Ethf - i*h*conj(Pauli)*gt/Ethf;
 
 % Here define the additional terms due to the INTRINSIC spin-orbit
 % coupling, again divide by Thouless energy in ferromagnet for
@@ -254,60 +228,4 @@ res = [dg1_x0 - Tot(1,1);
     dgt2_xd - Tott2(1,2);
     dgt3_xd - Tott2(2,1);
     dgt4_xd - Tott2(2,2)];
-
-% =========================================================================
-
-
-
-function yinit = mat4init(x)
-
-global jj
-
-global ggf1_init;
-global dggf1_init;
-global ggf2_init;
-global dggf2_init;
-global ggf3_init;
-global dggf3_init;
-global ggf4_init;
-global dggf4_init;
-
-global ggtf1_init;
-global dggtf1_init;
-global ggtf2_init;
-global dggtf2_init;
-global ggtf3_init;
-global dggtf3_init;
-global ggtf4_init;
-global dggtf4_init
-
-k = round(100*x);
-
-if k==0
-    k=1;
-end
-
-% This is the guess for the y-vector, i.e.
-% y=[gamma1,gamma1',gamma2,gamma2'...]
-
-yinit = [ggf1_init(jj,k); 
-         dggf1_init(jj,k); 
-         ggf2_init(jj,k); 
-         dggf2_init(jj,k); 
-         ggf3_init(jj,k);  
-         dggf3_init(jj,k); 
-         ggf4_init(jj,k); 
-         dggf4_init(jj,k); 
-         ggtf1_init(jj,k); 
-         dggtf1_init(jj,k); 
-         ggtf2_init(jj,k); 
-         dggtf2_init(jj,k); 
-         ggtf3_init(jj,k);  
-         dggtf3_init(jj,k); 
-         ggtf4_init(jj,k); 
-         dggtf4_init(jj,k)]; 
-
-% =========================================================================
-
-
 
