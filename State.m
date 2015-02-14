@@ -79,8 +79,28 @@ classdef State
         % Definition of other useful methods
         function result = vectorize(self)
             % Convert the internal data structure to a vector shape
-            result = [reshape(self.g,  1, 4) reshape(self.dg,  1, 4) ...
-                      reshape(self.gt, 1, 4) reshape(self.dgt, 1, 4)];
+            result = [self.vectorize_g  self.vectorize_dg ...
+                      self.vectorize_gt self.vectorize_dgt];
+        end
+        
+        function result = vectorize_g(self)
+            % Convert part of the internal data structure to a vector shape
+            result = reshape(self.g,  1, 4);
+        end
+
+        function result = vectorize_dg(self)
+            % Convert part of the internal data structure to a vector shape
+            result = reshape(self.dg,  1, 4);
+        end
+        
+        function result = vectorize_gt(self)
+            % Convert part of the internal data structure to a vector shape
+            result = reshape(self.gt,  1, 4);
+        end
+
+        function result = vectorize_dgt(self)
+            % Convert part of the internal data structure to a vector shape
+            result = reshape(self.dgt,  1, 4);
         end
 
         function result = singlet(self, exchange)

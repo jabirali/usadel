@@ -26,7 +26,7 @@ function [gg1,gg2,gt,dgt] = UsadelF(state, exchange, spinorbit)
 
     xs = linspace(0,1);%We want 100 solutions (sol) for different x between 0 and 1.
     ys = deval(system,xs);%deval returns solutions sol to a differential equation, using the bvp6c package above
-
+        
     % Extract the gamma matrices and their derivatives drom the state vector
     gs   = reshape(ys( 1: 4), 2, 2)';
     dgs  = reshape(ys( 5: 8), 2, 2)';
@@ -89,6 +89,8 @@ tott11 = tott(1,1);
 tott12 = tott(1,2);
 tott21 = tott(2,1);
 tott22 = tott(2,2);
+
+dydx = [dg rhs ]
 
 dydx = [dg1; tot11;
     dg2; tot12;
