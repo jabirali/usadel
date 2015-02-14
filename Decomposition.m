@@ -1,4 +1,4 @@
-function [singlet,tripletS,tripletL] = decomposition(green, exchange)
+function [singlet,tripletS,tripletL] = Decomposition(green, exchange)
     % This function takes a Green's function matrix in spin space as input,
     % and splits the Green's function into a singlet component, a
     % short-range triplet component (along the exchange field), and a
