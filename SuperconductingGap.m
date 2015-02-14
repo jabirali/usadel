@@ -7,7 +7,9 @@ function gap = SuperconductingGap(singlet, temperature, cutoff, scaling)
     % in a superconductor and the temperature of the system, and calculates
     % the superconducting gap of the material.
     %
-    % Input:
+    % Input:    singlet     
+    %           temperature The temperature of the material
+    %           cutoff      The Debye frequency cutoff of the material
     %           scaling     The superconducting gap is proportional to this
     %                       scaling constant (which is usually called N₀λ)
 

@@ -18,9 +18,6 @@ classdef State
         dg  = zeros(2);
         gt  = zeros(2);
         dgt = zeros(2);
-        
-        singlet = 0;
-        triplet = zeros([1 3]);
     end
     
     methods
@@ -64,14 +61,6 @@ classdef State
                     self.dgt = varargin{4};
                 end
             end
-            
-            % Calculate the singlet component (proportional to iσ^y)
-            self.singlet = (self.g(1,2) - self.g(2,1))/2;
-
-            % Calculate the triplet component (proportional to [σ^x,σ^y,σ^z]iσ^y)
-            self.triplet = [(self.g(2,2) - self.g(1,1))/2;
-                            (self.g(1,1) + self.g(2,2))/2i;
-                            (self.g(1,2) + self.g(2,1))/2];
         end
         
         % Overloading of the display function
@@ -89,8 +78,34 @@ classdef State
 
         % Definition of other useful methods
         function result = vectorize(self)
+            % Convert the internal data structure to a vector shape
             result = [reshape(self.g,  1, 4) reshape(self.dg,  1, 4) ...
                       reshape(self.gt, 1, 4) reshape(self.dgt, 1, 4)];
+        end
+
+        function result = singlet(self, exchange)
+            % Calculate the singlet component of g (proportional to iσ^y)
+            result = (self.g(1,2) - self.g(2,1))/2;
+        end
+        
+        function result = triplet(self, exchange)
+            % Calculate the triplet component (proportional to [σ^x,σ^y,σ^z]iσ^y)
+            result = [(self.g(2,2) - self.g(1,1))/2,                ...
+                      (self.g(1,1) + self.g(2,2))/2i,               ...
+                      (self.g(1,2) + self.g(2,1))/2];
+        end
+        
+        function result = srtc(self, exchange)
+            % This method returns the short-range triplet component
+            % (along the exchange-field provided as an argument)
+            unitvec = exchange/norm(exchange);
+            result  = dot(self.triplet,unitvec) .* unitvec;
+        end
+
+        function result = lrtc(self, exchange)
+            % This method returns the long-range triplet component
+            % (perpendicular to the exchange-field provided as argument)
+            result = self.triplet - self.srtc(exchange);
         end
     end
     

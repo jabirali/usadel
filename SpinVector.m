@@ -161,4 +161,40 @@ classdef SpinVector
             result = SpinVector(lhs.x/rhs, lhs.y/rhs, lhs.z/rhs);
         end
     end
+    
+    
+    
+    properties (Constant)
+        % Definition of constant properties, which are available without instantiating an object
+          Pauli = SpinVector([0,1;1,0], [0,-i;i,0], [1,0;0,-1]);
+    end
+    
+    
+    
+    methods (Static)
+        % Definition of static methods, which belong to the class and not the instance
+        
+        function result = RashbaDresselhaus(strength, angle)
+        % This function returns an SU(2) vector field that describes the
+        % a Rashba--Dresselhaus coupling in the xy-plane. The coupling
+        % constants are given in polar coordinates, so that the Rashba constant
+        % is strength*sin(angle), and the Dresselhaus one strength*cos(angle).
+        %
+        % Input:
+        %   strength        Strength of the spin-orbit coupling;
+        %                   increases both Rashba and Dresselhaus couplings.
+        %   angle           Angle between coupled spin and momentum components;
+        %                   rotates between Dresselhaus and Rashba couplings.
+        % Output:
+        %   A               3x2x2 SU(2) valued vector field that describes the
+        %                   Rashba--Dresselhaus spin-orbit coupling above.
+
+        % Define the Rashba--Dresselhaus SU(2) field
+        result = SpinVector( strength*(cos(angle)*SpinVector.Pauli.x   ...
+                                     + sin(angle)*SpinVector.Pauli.y), ...
+                            -strength*(cos(angle)*SpinVector.Pauli.y   ...
+                                     + sin(angle)*SpinVector.Pauli.x), ...
+                             0 );
+        end
+    end
 end
