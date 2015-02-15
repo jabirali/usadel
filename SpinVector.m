@@ -172,7 +172,7 @@ classdef SpinVector
     
     
     methods (Static)
-        % Definition of static methods, which belong to the class and not the instance
+        % Definition of static methods, which are available without instantiating an object
         
         function result = RashbaDresselhaus(strength, angle)
         % This function returns an SU(2) vector field that describes the
