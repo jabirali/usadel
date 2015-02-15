@@ -157,9 +157,6 @@ classdef Superconductor < handle
             % position 'x', the current state vector 'y', and an energy as
             % inputs, and calculates the Jacobian of the system. This is
             % performed using the Riccati parametrized Usadel equations.
-            %
-            % The function is nested, and can therefore access the variables of the
-            % parent function to determine the energy and superconducting gap.
             
             % Instantiate a 'State' object based on the state vector
             state = State(y);
@@ -198,8 +195,34 @@ classdef Superconductor < handle
             dydx = state.vectorize;
         end
         
-        function r = boundary(self, y1, y2, energy)
-            r = y1-y2;
+        function residue = boundary(self, y1, y2, energy)
+            % This function takes a Superconductor object 'self', the
+            % position 'x', the current state vector 'y', and an energy as
+            % inputs, and calculates the Kuprianov-Lukichev boundary
+            % conditions for the system. 
+
+            % Extract the Riccati parameters and their derivatives, and
+            % calculate the normalization matrices
+            state = State(y1);
+            
+            g   = state.g;
+            dg  = state.dg;
+            gt  = state.gt;
+            dgt = state.dgt;
+            
+            lg   = state.g;
+            ldg  = state.dg;
+            lgt  = state.gt;
+            ldgt = state.dgt;
+
+            % Calculate the normalization matrices
+            N  = inv( eye(2) - g*gt );
+            Nt = inv( eye(2) - gt*g );
+            
+            % Left boundary
+            rl = ( eye(2) - g1*gt2 )*N2*(g2 - g1)/interface_left;
+
+            residue = y1-y2;
         end
     end
 end
