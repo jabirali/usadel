@@ -1,12 +1,12 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-15
 % Updated 2015-02-15
+%
+% This defines a data structure that describes the physical state of
+% superconducting material for a given range of positions and energies.
 
 
 classdef Superconductor < handle
-    % This defines a data structure that describes the physical state of
-    % superconducting material for a range of positions and energies.
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Define the internal variables for the data structure
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -71,14 +71,24 @@ classdef Superconductor < handle
             end
         end
         
-        function update_solution
+        function update_state(self)
+            % This function solves the Usadel equation numerically for the
+            % given position and energy range, using the current stored 
+            % estimate for the superconducting gap.
+
+            % Set the accuracy of the numerical solution
+            options = bvpset('AbsTol',1e-04,'RelTol',1e-04,'Nmax',1000);
+            
+            for m=1:length(self.energies)
+                % Use the current state of the system as an initial guess
+                current = @(n) self.states(n,m).vectorize;
+                initial = bvpinit(self.positions, current);
+                
+                % 
+                solution = bvp6c(@self.jacobian,@self.boundary,initial,options)
+            end
         end
         
-        
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Methods describing the behaviour of a superconductor
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
         function dydx = jacobian(x,y)
             % This function takes the position 'x' and current state vector 'y' as
             % inputs, and calculates the Jacobian of the system. This is performed
@@ -120,8 +130,8 @@ classdef Superconductor < handle
             dydx = state.vectorize;
         end
         
-        function boundary()
-            % Calculates Kuprianov--Lukichev
+        function r = boundary(y1,y2)
+            r = [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0];
         end
     end
     

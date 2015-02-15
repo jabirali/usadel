@@ -1,13 +1,13 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-14
 % Updated 2015-02-15
-
+%
+% Define a data structure to describe objects with both a 3x1 vector
+% structure in geometric space and a 2x2 matrix structure in spin
+% space, such as the Pauli vector, and in general SU(2) vector fields.
+    
+    
 classdef SpinVector
-    % Define a data structure to describe objects with both a 3x1 vector
-    % structure in geometric space and a 2x2 matrix structure in spin
-    % space, such as the Pauli vector, and in general SU(2) vector fields.
-    
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Define the internal variables for the data structure
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

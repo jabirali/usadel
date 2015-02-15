@@ -1,19 +1,19 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-14
 % Updated 2015-02-15
+%
+% Define a data structure to describe the state of the physical system
+% for a given position and energy. This is done by describing the
+% Green's function 'g', it's tilde conjugate 'gt', and their first
+% derivatives 'dg' and 'dgt' for that configuration.
+%
+% This class is mainly intended for use with differential equation
+% solvers, and therefore provides the method 'vectorize' to pack the
+% internal variables in a vector format, and constructor State(...)
+% that is able to unpack this vector format.
+
 
 classdef State
-    % Define a data structure to describe the state of the physical system
-    % for a given position and energy. This is done by describing the
-    % Green's function 'g', it's tilde conjugate 'gt', and their first
-    % derivatives 'dg' and 'dgt' for that configuration.
-    %
-    % This class is mainly intended for use with differential equation
-    % solvers, and therefore provides the method 'vectorize' to pack the
-    % internal variables in a vector format, and constructor State(...)
-    % that is able to unpack this vector format.
-
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Define the internal variables of the data structure
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    

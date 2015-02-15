@@ -1,10 +1,13 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-15
 % Updated 2015-02-15
+%
+% This defines a data structure that describes the physical state of
+% ferromagnetic material with spin-orbit coupling for a given range
+% of positions and energies.
 
 
-classdef Ferromagnet < handle
-   
+classdef Ferromagnet < handle   
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Subfunctions describing the behaviour of a ferromagnet
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
