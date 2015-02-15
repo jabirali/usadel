@@ -21,7 +21,9 @@ classdef Ferromagnet < handle
         bc_left     = State.empty(0);       % Left boundary condition
         bc_right    = State.empty(0);       % Right boundary condition
         
-        diffusion   = 1;                    % Diffusion constant
+        diffusion       = 1;                 % Diffusion constant
+        interface_left  = 1;                 % Interface parameter (left)
+        interface_right = 1;                 % Interface parameter (right)
     end
     
     

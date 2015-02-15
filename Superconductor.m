@@ -16,12 +16,14 @@ classdef Superconductor < handle
         gap         = [];
         states      = State.empty(0,0);
         
-        bc_left     = State.empty(0);       % Left boundary condition
-        bc_right    = State.empty(0);       % Right boundary condition
+        bc_left     = State.empty(0);        % Left boundary condition
+        bc_right    = State.empty(0);        % Right boundary condition
         
-        temperature = 1e-16;                % Temperature of the system
-        scaling     = 1;                    % Material property N₀λ
-        diffusion   = 1;                    % Diffusion constant
+        temperature     = 1e-16;             % Temperature of the system
+        scaling         = 1;                 % Material constant N₀λ
+        diffusion       = 1;                 % Diffusion constant
+        interface_left  = 1;                 % Interface parameter (left)
+        interface_right = 1;                 % Interface parameter (right)
     end
     
     
