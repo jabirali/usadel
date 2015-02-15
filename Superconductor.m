@@ -16,21 +16,23 @@ classdef Superconductor < handle
         gap         = [];                    % Superconducting gap at each position
         states      = State.empty(0,0);      % Green's functions for each position and energy
         
-        temperature     = 1e-16;             % Temperature of the system
-        scaling         = 1;                 % Material constant N₀λ
-        diffusion       = 1;                 % Diffusion constant
-        interface_left  = 1;                 % Interface parameter (left)
-        interface_right = 1;                 % Interface parameter (right)
+        temperature     = 1e-16;             % Temperature of the system   (default: absolute zero)
+        scaling         = 1;                 % Material constant N₀λ       (default: unity)
+        diffusion       = 1;                 % Diffusion constant          (default: unity)
+        interface_left  = inf;               % Interface parameter (left)  (default: vacuum)
+        interface_right = inf;               % Interface parameter (right) (default: vacuum)
         
-        boundary_left   = State.empty(0);    % Boundary condition (left)
-        boundary_right  = State.empty(0);    % Boundary condition (right)
+        boundary_left   = State.empty(0);    % Boundary condition (left)   (default: vacuum)
+        boundary_right  = State.empty(0);    % Boundary condition (right)  (default: vacuum)
     end
     
+
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Define the internal methods
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     methods
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Define constructor and accessor methods
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+
         function self = Superconductor(positions, energies)
             % Define a constructor which initializes the Superconductor
             % from a vector of positions and a vector of energies
@@ -46,36 +48,57 @@ classdef Superconductor < handle
                 end
             end
             
-            % Set the boundary conditions to empty states by default
+            % Set the boundary conditions to vacuum states by default
             self.boundary_left(length(energies))  = 0;
             self.boundary_right(length(energies)) = 0;    
         end
         
-        function update_gap(self)
-            % This function extracts the singlet component of the Green's
-            % function of the superconductor at each position and energy,
-            % and then uses the gap equation to update the current estimate
-            % of the superconducting gap at equilibrium.
-            
-            singlets = zeros(size(self.energies));
-            for n=1:length(self.positions)
-                % Extract the singlet components from the states
-                for m=1:length(self.energies)
-                    singlets(m) = self.states(n,m).singlet;
-                end
-                
-                % Create a cubic interpolation of the numerical data above,
-                % multiplied by the tanh(ε/2T) kernel in the gap equation
-                kernel = @(E) real(pchip(self.energies, singlets, E)) ...
-                           .* tanh(E./(2*self.temperature));
+        function index = position_index(self, position)
+            % Returns the vector index corresponding to a given energy value
+            index = find(abs(self.positions-position) < 1e-6, 1, 'first');
+            if ~isscalar(index)
+                error('Superconductor.position_index: Provided value is not in the position vector!');
+            end
+        end
 
-                % Perform a numerical integration of the interpolation up to
-                % the Debye cutoff (presumably the last element of 'energies')
-                self.gap(n) = self.scaling * integral(kernel, 0, self.energies(end));
+        function index = energy_index(self, energy)
+            % Returns the vector index corresponding to a given energy value
+            index = find(abs(self.energies-energy) < 1e-6, 1, 'first');
+            if ~isscalar(index)
+                error('Superconductor.energy_index: Provided value is not in the energy vector!');
+            end
+        end
+                
+        function result = critical(self)
+            % This function returns whether or not the system is above
+            % critical temperature, i.e. if the superconducting gap is zero
+            % everywhere in the superconductor.
+            result = ( max(abs(self.gap)) < 1e-4 );
+        end
+        
+        function result = gap_interpolate(self, x)
+            % This function performs a linear interpolation of the
+            % superconducting gap as a function of position, and returns
+            % the value in a given point.
+            result = interp1(self.positions, self.gap, x);
+        end
+        
+        
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Define methods that update the internal state of the object
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+        
+        function gap_update(self)
+            % This function updates the vector containing the current
+            % estimate of the superconducting gap at equilibrium.
+            
+            for n=1:length(self.positions)
+                  self.gap(n) = self.gap_calculate(self, self.positions(n));
             end
         end
         
-        function update_state(self)
+        function state_update(self)
             % This function solves the Usadel equation numerically for the
             % given position and energy range, using the current stored 
             % estimate for the superconducting gap.
@@ -110,27 +133,12 @@ classdef Superconductor < handle
         
         function update(self)
             % This function updates the internal state of the
-            % superconductor by first solving the Usadel equation
-            % numerically, and then calculating the superconducting gap
-            % using the solution. Always run this after changing the
+            % superconductor object by calling first 'state_update' and 
+            % then 'gap_update'. Always run this after changing the
             % boundary conditions or temperature of the system.
             
-            self.update_state;
-            self.update_gap;
-        end
-        
-        function result = critical(self)
-            % This function returns whether or not the system is above
-            % critical temperature, i.e. if the superconducting gap is zero
-            % everywhere in the superconductor.
-            result = ( max(abs(self.gap)) < 1e-4 );
-        end
-        
-        function result = gap_interpolate(self, x)
-            % This function performs a linear interpolation of the
-            % superconducting gap as a function of position, and returns
-            % the value in a given point.
-            result = interp1(self.positions, self.gap, x);
+            self.state_update;
+            self.gap_update;
         end
     end 
     
@@ -203,26 +211,49 @@ classdef Superconductor < handle
 
             % Extract the Riccati parameters and their derivatives, and
             % calculate the normalization matrices
-            state = State(y1);
-            
-            g   = state.g;
-            dg  = state.dg;
-            gt  = state.gt;
-            dgt = state.dgt;
-            
-            lg   = state.g;
-            ldg  = state.dg;
-            lgt  = state.gt;
-            ldgt = state.dgt;
-
-            % Calculate the normalization matrices
-            N  = inv( eye(2) - g*gt );
-            Nt = inv( eye(2) - gt*g );
-            
-            % Left boundary
-            rl = ( eye(2) - g1*gt2 )*N2*(g2 - g1)/interface_left;
+%             state = State(y1);
+%             
+%             g   = state.g;
+%             dg  = state.dg;
+%             gt  = state.gt;
+%             dgt = state.dgt;
+%             
+%             lg   = state.g;
+%             ldg  = state.dg;
+%             lgt  = state.gt;
+%             ldgt = state.dgt;
+% 
+%             % Calculate the normalization matrices
+%             N  = inv( eye(2) - g*gt );
+%             Nt = inv( eye(2) - gt*g );
+%             
+%             % Left boundary
+%             rl = ( eye(2) - g1*gt2 )*N2*(g2 - g1)/interface_left;
 
             residue = y1-y2;
+        end
+        
+        function gap = gap_calculate(self, position)
+            % This function extracts the singlet components of the Green's
+            % function at a given position, and then uses the gap equation
+            % to calculate the superconducting gap at that point.
+            
+            singlets = zeros(size(self.energies));
+            index    = self.position_index(position);
+            
+            % Extract the singlet components from the states
+            for m=1:length(self.energies)
+                singlets(m) = self.states(index,m).singlet;
+            end
+                
+            % Create a cubic interpolation of the numerical data above,
+            % multiplied by the tanh(ε/2T) kernel in the gap equation
+            kernel = @(E) real(pchip(self.energies, singlets, E)) ...
+                       .* tanh(E./(2*self.temperature));
+
+            % Perform a numerical integration of the interpolation up to
+            % the Debye cutoff (presumably the last element of 'energies')
+            gap = self.scaling * integral(kernel, 0, self.energies(end));
         end
     end
 end

@@ -96,7 +96,7 @@ classdef SpinVector
             if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
                 result = SpinVector(lhs.x+rhs.x, lhs.y+rhs.y, lhs.z+rhs.z);
             else
-                error('SpinVector:plus', 'You can only add a spin vector to another spin vector.');
+                error('SpinVector.plus: You can only add a spin vector to another spin vector.');
             end
         end
         
@@ -105,7 +105,7 @@ classdef SpinVector
             if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
                 result = SpinVector(lhs.x-rhs.x, lhs.y-rhs.y, lhs.z-rhs.z);
             else
-                error('SpinVector:minus', 'You can only subtract spin vectors from each other.');
+                error('SpinVector.minus: You can only subtract spin vectors from each other.');
             end
         end
         
@@ -114,7 +114,7 @@ classdef SpinVector
             if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
                 result = SpinVector(lhs.x*rhs.x,lhs.y*rhs.y,lhs.z*rhs.z);
             else
-                error('SpinVector:times', 'You can only arraywise multiply two spin vectors.');
+                error('SpinVector.times: You can only arraywise multiply two spin vectors.');
             end
         end
         
@@ -135,7 +135,7 @@ classdef SpinVector
                     % Right-hand side is a matrix
                     result = SpinVector(lhs.x*rhs, lhs.y*rhs, lhs.z*rhs);
                 else
-                    error('SpinVector:mtimes', 'Right-hand argument has to be a spin vector, matrix, vector, or scalar.');
+                    error('SpinVector.mtimes: Right-hand argument has to be a spin vector, matrix, vector, or scalar.');
                 end
             else
                 % Right-hand side is a spin vector
@@ -149,7 +149,7 @@ classdef SpinVector
                     % Left-hand side is a matrix
                     result = SpinVector(rhs.x*lhs, rhs.y*lhs, rhs.z*lhs);
                 else
-                    error('SpinVector:mtimes', 'Left-hand argument has to be a spin vector, matrix, vector, or scalar.');
+                    error('SpinVector.mtimes: Left-hand argument has to be a spin vector, matrix, vector, or scalar.');
                 end
             end
         end
@@ -157,7 +157,7 @@ classdef SpinVector
         function result = mpower(lhs,rhs)
             % This overloads the matrix power operator
             if rhs ~= 2
-                error('SpinVector:mpower', 'The matrix power of a spin vector has only been defined for an exponent of two.');
+                error('SpinVector.mpower: The matrix power of a spin vector has only been defined for an exponent of two.');
             end
             
             result = lhs.x^2 + lhs.y^2 + lhs.z^2;
