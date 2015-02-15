@@ -35,7 +35,7 @@ classdef Superconductor < handle
             self.gap       = ones(size(positions));
             
             % Initialize the internal state to a BCS bulk superconductor
-            self.states(length(positions), length(energies)) = State;
+            self.states(length(positions), length(energies)) = 0;
             for i=1:length(positions)
                 for j=1:length(energies)
                     self.states(i,j) = Superconductor.Bulk(energies(j), 1);
@@ -81,15 +81,63 @@ classdef Superconductor < handle
             
             for m=1:length(self.energies)
                 % Use the current state of the system as an initial guess
-                current = @(n) self.states(n,m).vectorize;
+                current = self.states(:,m);
+                for n=1:length(current)
+                    current(n) = current(n).vectorize;
+                end
+                %@(n) self.states(n,m).vectorize;
                 initial = bvpinit(self.positions, current);
                 
+                %
+                jacobian = @(x,y) Superconductor.jacobian(x,y,self.energies(m));
+                boundary = @(a,b) Superconductor.boundary(a,b);
+                solution = bvp6c(jacobian,boundary,initial,options);
+                
+                % TODO:
+                % Jacobian and Boundary: methods (require self) or static (need variables passing)
+                % Implement the boundary conditions
                 % 
-                solution = bvp6c(@self.jacobian,@self.boundary,initial,options)
             end
         end
         
-        function dydx = jacobian(x,y)
+        function update(self)
+            % This function updates the internal state of the
+            % superconductor by first solving the Usadel equation
+            % numerically, and then calculating the superconducting gap
+            % using the solution. Always run this after changing the
+            % boundary conditions or temperature of the system.
+            
+            self.update_state;
+            self.update_gap;
+        end
+        
+        function result = critical(self)
+            % This function returns whether or not the system is above
+            % critical temperature, i.e. if the superconducting gap is zero
+            % everywhere in the superconductor.
+            result = ( max(abs(self.gap)) < 1e-4 );
+        end
+    end 
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Define static methods (available without object instantiation)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    methods (Static)        
+        function result = Bulk(energy, gap)
+            % This function takes as its input an energy and a superconducting gap,
+            % and returns a State object with Green's functions that correspond to
+            % a BCS superconductor bulk state.
+            
+            theta = atanh(gap/(energy+0.001i));
+            c     = cosh(theta);
+            s     = sinh(theta);
+            
+            result = State([0,  s/(1+c); -s/(1+c), 0], 0,            ...
+                           [0, -s/(1+c);  s/(1+c), 0], 0);
+        end
+    
+        function dydx = jacobian(x, y, energy)
             % This function takes the position 'x' and current state vector 'y' as
             % inputs, and calculates the Jacobian of the system. This is performed
             % using the Riccati parametrized Usadel eqs in the *superconductor*.
@@ -112,6 +160,7 @@ classdef Superconductor < handle
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the superconductor
+            x
             d2g  =  - 2*dg*Nt*gt*dg ...
                     - 2i*energy*g   ...
                     - gap*(SpinVector.Pauli.y - g * SpinVector.Pauli.y * g);
@@ -130,29 +179,8 @@ classdef Superconductor < handle
             dydx = state.vectorize;
         end
         
-        function r = boundary(y1,y2)
-            r = [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0];
-        end
-    end
-    
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Define static methods (available without object instantiation)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
-    methods (Static)
-        % Definition of static methods, which belong to the class and not the instance
-        
-        function result = Bulk(energy, gap)
-            % This function takes as its input an energy and a superconducting gap,
-            % and returns a State object with Green's functions that correspond to
-            % a BCS superconductor bulk state.
-            
-            theta = atanh(gap/(energy+0.001i));
-            c     = cosh(theta);
-            s     = sinh(theta);
-            
-            result = State([0,  s/(1+c); -s/(1+c), 0], 0,            ...
-                           [0, -s/(1+c);  s/(1+c), 0], 0);
+        function r = boundary(y1, y2)
+            r = y1-y2;
         end
     end
 end
