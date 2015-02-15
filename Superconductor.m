@@ -66,7 +66,7 @@ classdef Superconductor < handle
                 
                 % Create a cubic interpolation of the numerical data above,
                 % multiplied by the tanh(ε/2T) kernel in the gap equation
-                kernel = @(E) pchip(self.energies, singlets, E) ...
+                kernel = @(E) real(pchip(self.energies, singlets, E)) ...
                            .* tanh(E./(2*self.temperature));
 
                 % Perform a numerical integration of the interpolation up to
@@ -84,30 +84,27 @@ classdef Superconductor < handle
             options = bvpset('AbsTol',1e-04,'RelTol',1e-04,'Nmax',1000);
             
             for m=1:length(self.energies)
-                % Use the current state of the system as an initial guess
-                current = self.states(:,m);
-                for n=1:length(current)
-                    current(n) = current(n).vectorize;
+                % Vectorize the current state of the system for the given
+                % energy, and use it as an initial guess for the solution
+                current = zeros(16,length(self.positions));
+                for n=1:length(self.positions)
+                    current(:,n) = self.states(n,m).vectorize;
                 end
-                %@(n) self.states(n,m).vectorize;
-                initial = bvpinit(self.positions, self.positions); % TODO: Change argument
+                initial = bvpinit(self.positions', current);
                 
-                % PRETTIER IF IT WOULD WORK:
-                % jac = @(x,y) jacobian(self,x,y);
-                % Just make jacobian a static function that takes a
-                % Superconductor as its first argument, then partially
-                % evaluate it! :D
-                
-                %
-                %jacobian = @(x,y) Superconductor.jacobian(x,y,self.energies(m),self.diffusion,@self.gap_interpolate);
-                bc  = @(a,b) Superconductor.boundary(self,a,b,self.energies(m));
+                % Partially evaluate the Jacobian and boundary conditions
+                % for the current superconductor energy
                 jc = @(x,y) Superconductor.jacobian(self,x,y,self.energies(m));
-                solution = bvp6c(jc,bc,initial,options);
+                bc = @(a,b) Superconductor.boundary(self,a,b,self.energies(m));
                 
-                % TODO:
-                % Jacobian and Boundary: methods (require self) or static (need variables passing)
-                % Implement the boundary conditions
-                % 
+                % Solve the differential equation, and evaluate the
+                % solution on the position vector of the superconductor 
+                solution = deval(bvp6c(jc,bc,initial,options), self.positions);
+
+                % Update the current state of the system based on the solution
+                for n=1:length(self.positions)
+                    self.states(n,m) = State(solution(:,n));
+                end
             end
         end
         
@@ -130,10 +127,10 @@ classdef Superconductor < handle
         end
         
         function result = gap_interpolate(self, x)
-            % This function performs a cubic interpolation of the
+            % This function performs a linear interpolation of the
             % superconducting gap as a function of position, and returns
             % the value in a given point.
-            result = pchip(self.positions, self.gap, x);
+            result = interp1(self.positions, self.gap, x);
         end
     end 
     
