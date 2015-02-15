@@ -18,8 +18,10 @@ classdef Superconductor < handle
         
         bc_left     = State.empty(0);       % Left boundary condition
         bc_right    = State.empty(0);       % Right boundary condition
+        
         temperature = 1e-16;                % Temperature of the system
         scaling     = 1;                    % Material property N₀λ
+        diffusion   = 1;                    % Diffusion constant
     end
     
     
@@ -160,14 +162,13 @@ classdef Superconductor < handle
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the superconductor
-            x
             d2g  =  - 2*dg*Nt*gt*dg ...
-                    - 2i*energy*g   ...
-                    - gap*(SpinVector.Pauli.y - g * SpinVector.Pauli.y * g);
+                    - 2i*(energy/diffusion)*g   ...
+                    - (gap/diffusion)*(SpinVector.Pauli.y - g * SpinVector.Pauli.y * g);
             
             d2gt =  - 2*dgt*N*g*dgt  ...
-                    - 2i*energy*gt   ...
-                    + gap*(SpinVector.Pauli.y - gt * SpinVector.Pauli.y * gt);
+                    - 2i*(energy/diffusion)*gt   ...
+                    + (gap/diffusion)*(SpinVector.Pauli.y - gt * SpinVector.Pauli.y * gt);
             
             % Fill the results of the calculations back into a 'State' object
             state.g   = dg;
