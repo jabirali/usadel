@@ -13,6 +13,10 @@ classdef State
     % internal variables in a vector format, and constructor State(...)
     % that is able to unpack this vector format.
 
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Define the internal variables of the data structure
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     properties (GetAccess=public, SetAccess=public)
         g   = zeros(2);
         dg  = zeros(2);
@@ -20,6 +24,11 @@ classdef State
         dgt = zeros(2);
     end
     
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Define the internal methods and overloaded operators
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     methods
         function self = State(varargin)
             % This is the default constructor, which takes as its input either:
@@ -127,24 +136,5 @@ classdef State
             % (perpendicular to the exchange-field provided as argument)
             result = self.triplet - self.srtc(exchange);
         end
-    end
-    
-    methods (Static)
-        % Definition of static methods, which belong to the class and not the instance
-        
-        function result = Bulk(energy, gap)
-            % This function takes as its input an energy and a
-            % superconducting gap, and returns a State object with Green's
-            % functions that correspond to a BCS bulk state.
-            
-            theta = atanh(gap/(energy+0.001i));
-            c     = cosh(theta);
-            s     = sinh(theta);
-            
-            result = State([0,  s/(1+c); -s/(1+c), 0], 0,            ...
-                           [0, -s/(1+c);  s/(1+c), 0], 0);
-        end
-        
-
     end
 end

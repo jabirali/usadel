@@ -7,15 +7,22 @@ classdef SpinVector
     % structure in geometric space and a 2x2 matrix structure in spin
     % space, such as the Pauli vector, and in general SU(2) vector fields.
     
-    % Define internal variables for the data structure
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Define the internal variables for the data structure
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     properties (GetAccess=public, SetAccess=public)
         x = zeros(2);
         y = zeros(2);
         z = zeros(2);
     end
+
     
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Define the internal methods and operator overloading
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods
-        % Define a constructor for the data structure
         function self = SpinVector(Ax, Ay, Az)
             % Constructs a spin vector from three spin matrices Ax, Ay, Az
             
@@ -161,19 +168,21 @@ classdef SpinVector
             result = SpinVector(lhs.x/rhs, lhs.y/rhs, lhs.z/rhs);
         end
     end
+   
     
     
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Define constant properties (available without object instantiation)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     properties (Constant)
-        % Definition of constant properties, which are available without instantiating an object
           Pauli = SpinVector([0,1;1,0], [0,-i;i,0], [1,0;0,-1]);
     end
     
     
-    
-    methods (Static)
-        % Definition of static methods, which are available without instantiating an object
-        
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Define static methods (available without object instantiation)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    methods (Static)        
         function result = RashbaDresselhaus(strength, angle)
         % This function returns an SU(2) vector field that describes the
         % a Rashba--Dresselhaus coupling in the xy-plane. The coupling

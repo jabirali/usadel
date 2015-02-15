@@ -3,6 +3,10 @@
 % Created 2015-02-15
 % Updated 2015-02-15
 
+TODO:
+- Calculate and plot crit temp (unless abs(delta)<1e-4) (only gap t dep)
+- Calculate and plot density of states
+- Calculate and plot singlet/srtc/lrtc
 
 function MainSF(bulk)
     bulk = true;
