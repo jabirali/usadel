@@ -12,11 +12,11 @@ classdef Ferromagnet < handle
     % Define the internal variables for the data structure
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     properties (GetAccess=public, SetAccess=public)
-        positions   = [];
-        energies    = [];
-        exchange    = [0,0,0];
-        spinorbit   = SpinVector(0,0,0);
-        states      = State.empty(0,0);
+        positions   = [];                    % Positions in the ferromagnet
+        energies    = [];                    % Energies of the ferromagnet
+        exchange    = [0,0,0];               % Exchange field
+        spinorbit   = SpinVector(0,0,0);     % Spin-orbit field
+        states      = State.empty(0,0);      % Green's functions for each position and energy
         
         diffusion       = 1;                 % Diffusion constant
         interface_left  = 1;                 % Interface parameter (left)

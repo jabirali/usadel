@@ -11,10 +11,10 @@ classdef Superconductor < handle
     % Define the internal variables for the data structure
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     properties (GetAccess=public, SetAccess=public)
-        positions   = [];
-        energies    = [];
-        gap         = [];
-        states      = State.empty(0,0);
+        positions   = [];                    % Positions in the superconductor
+        energies    = [];                    % Energies of the superconductor
+        gap         = [];                    % Superconducting gap at each position
+        states      = State.empty(0,0);      % Green's functions for each position and energy
         
         temperature     = 1e-16;             % Temperature of the system
         scaling         = 1;                 % Material constant N₀λ
