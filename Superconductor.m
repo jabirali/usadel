@@ -92,10 +92,17 @@ classdef Superconductor < handle
                 %@(n) self.states(n,m).vectorize;
                 initial = bvpinit(self.positions, self.positions); % TODO: Change argument
                 
+                % PRETTIER IF IT WOULD WORK:
+                % jac = @(x,y) jacobian(self,x,y);
+                % Just make jacobian a static function that takes a
+                % Superconductor as its first argument, then partially
+                % evaluate it! :D
+                
                 %
-                jacobian = @(x,y) Superconductor.jacobian(x,y,self.energies(m),self.diffusion);
-                boundary = @(a,b) Superconductor.boundary(a,b);
-                solution = bvp6c(jacobian,boundary,initial,options);
+                %jacobian = @(x,y) Superconductor.jacobian(x,y,self.energies(m),self.diffusion,@self.gap_interpolate);
+                bc  = @(a,b) Superconductor.boundary(self,a,b,self.energies(m));
+                jc = @(x,y) Superconductor.jacobian(self,x,y,self.energies(m));
+                solution = bvp6c(jc,bc,initial,options);
                 
                 % TODO:
                 % Jacobian and Boundary: methods (require self) or static (need variables passing)
@@ -121,6 +128,13 @@ classdef Superconductor < handle
             % everywhere in the superconductor.
             result = ( max(abs(self.gap)) < 1e-4 );
         end
+        
+        function result = gap_interpolate(self, x)
+            % This function performs a cubic interpolation of the
+            % superconducting gap as a function of position, and returns
+            % the value in a given point.
+            result = pchip(self.positions, self.gap, x);
+        end
     end 
     
     
@@ -141,16 +155,21 @@ classdef Superconductor < handle
                            [0, -s/(1+c);  s/(1+c), 0], 0);
         end
     
-        function dydx = jacobian(x, y, energy, diffusion)
-            % This function takes the position 'x' and current state vector 'y' as
-            % inputs, and calculates the Jacobian of the system. This is performed
-            % using the Riccati parametrized Usadel eqs in the *superconductor*.
+        function dydx = jacobian(self, x, y, energy)
+            % This function takes a Superconductor object 'self', the
+            % position 'x', the current state vector 'y', and an energy as
+            % inputs, and calculates the Jacobian of the system. This is
+            % performed using the Riccati parametrized Usadel equations.
             %
             % The function is nested, and can therefore access the variables of the
             % parent function to determine the energy and superconducting gap.
             
             % Instantiate a 'State' object based on the state vector
             state = State(y);
+            
+            % Extract diffusion constant and superconducting gap
+            diff = self.diffusion;
+            gap  = self.gap_interpolate(x);
             
             % Extract the Riccati parameters and their derivatives
             g   = state.g;
@@ -165,12 +184,12 @@ classdef Superconductor < handle
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the superconductor
             d2g  =  - 2*dg*Nt*gt*dg ...
-                    - 2i*(energy/diffusion)*g   ...
-                    - (gap/diffusion)*(SpinVector.Pauli.y - g * SpinVector.Pauli.y * g);
+                    - 2i*(energy/diff)*g   ...
+                    - (gap/diff)*(SpinVector.Pauli.y - g * SpinVector.Pauli.y * g);
             
             d2gt =  - 2*dgt*N*g*dgt  ...
-                    - 2i*(energy/diffusion)*gt   ...
-                    + (gap/diffusion)*(SpinVector.Pauli.y - gt * SpinVector.Pauli.y * gt);
+                    - 2i*(energy/diff)*gt   ...
+                    + (gap/diff)*(SpinVector.Pauli.y - gt * SpinVector.Pauli.y * gt);
             
             % Fill the results of the calculations back into a 'State' object
             state.g   = dg;
@@ -182,7 +201,7 @@ classdef Superconductor < handle
             dydx = state.vectorize;
         end
         
-        function r = boundary(y1, y2)
+        function r = boundary(self, y1, y2, energy)
             r = y1-y2;
         end
     end
