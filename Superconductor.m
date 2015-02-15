@@ -90,10 +90,10 @@ classdef Superconductor < handle
                     current(n) = current(n).vectorize;
                 end
                 %@(n) self.states(n,m).vectorize;
-                initial = bvpinit(self.positions, current);
+                initial = bvpinit(self.positions, self.positions); % TODO: Change argument
                 
                 %
-                jacobian = @(x,y) Superconductor.jacobian(x,y,self.energies(m));
+                jacobian = @(x,y) Superconductor.jacobian(x,y,self.energies(m),self.diffusion);
                 boundary = @(a,b) Superconductor.boundary(a,b);
                 solution = bvp6c(jacobian,boundary,initial,options);
                 
@@ -141,7 +141,7 @@ classdef Superconductor < handle
                            [0, -s/(1+c);  s/(1+c), 0], 0);
         end
     
-        function dydx = jacobian(x, y, energy)
+        function dydx = jacobian(x, y, energy, diffusion)
             % This function takes the position 'x' and current state vector 'y' as
             % inputs, and calculates the Jacobian of the system. This is performed
             % using the Riccati parametrized Usadel eqs in the *superconductor*.
