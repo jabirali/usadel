@@ -3,7 +3,7 @@
 % Updated 2015-02-15
 
 
-classdef Superconductor
+classdef Superconductor < handle
     % This defines a data structure that describes the physical state of
     % superconducting material for a range of positions and energies.
     
@@ -11,13 +11,15 @@ classdef Superconductor
     % Define the internal variables for the data structure
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     properties (GetAccess=public, SetAccess=public)
-        positions = [];
-        energies  = [];
-        gap       = [];
-        states    = State.empty(0,0);
+        positions   = [];
+        energies    = [];
+        gap         = [];
+        states      = State.empty(0,0);
         
-        left      = State.empty(0);
-        right     = State.empty(0);
+        bc_left     = State.empty(0);
+        bc_right    = State.empty(0);
+        temperature = 1e-16;
+        scaling     = 1;
     end
     
     
@@ -26,13 +28,47 @@ classdef Superconductor
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     methods
         function self = Superconductor(positions, energies)
+            % Define a constructor which initializes the Superconductor
+            % from a vector of positions and a vector of energies
             self.positions = positions;
             self.energies  = energies;
             self.gap       = ones(size(positions));
-            self.states    = 
+            
+            % Initialize the internal state to a BCS bulk superconductor
+            self.states(length(positions), length(energies)) = State;
+            for i=1:length(positions)
+                for j=1:length(energies)
+                    self.states(i,j) = Superconductor.Bulk(energies(j), 1);
+                end
+            end
+            
+            % Set the boundary conditions to empty states by default
+            self.bc_left(length(energies))  = 0;
+            self.bc_right(length(energies)) = 0;    
         end
         
-        function update_gap
+        function update_gap(self)
+            % This function extracts the singlet component of the Green's
+            % function of the superconductor at each position and energy,
+            % and then uses the gap equation to update the current estimate
+            % of the superconducting gap at equilibrium.
+            
+            singlets = zeros(size(self.energies));
+            for n=1:length(self.positions)
+                % Extract the singlet components from the states
+                for m=1:length(self.energies)
+                    singlets(m) = self.states(n,m).singlet;
+                end
+                
+                % Create a cubic interpolation of the numerical data above,
+                % multiplied by the tanh(ε/2T) kernel in the gap equation
+                kernel = @(E) pchip(self.energies, singlets, E) ...
+                           .* tanh(E./(2*self.temperature));
+
+                % Perform a numerical integration of the interpolation up to
+                % the Debye cutoff (presumably the last element of 'energies')
+                self.gap(n) = self.scaling * integral(kernel, 0, self.energies(end));
+            end
         end
         
         function update_solution

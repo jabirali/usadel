@@ -3,7 +3,7 @@
 % Updated 2015-02-15
 
 
-classdef Ferromagnet
+classdef Ferromagnet < handle
    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Subfunctions describing the behaviour of a ferromagnet

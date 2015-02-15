@@ -36,15 +36,19 @@ end
 
 
 function dydx = mat4ode(x,y)
-    % Extract the gamma matrices and their derivatives drom the state vector
-    g   = reshape(y( 1: 4), 2, 2)';
-    dg  = reshape(y( 5: 8), 2, 2)';
-    gt  = reshape(y( 9:12), 2, 2)';
-    dgt = reshape(y(13:16), 2, 2)';
+    % Unpack the gamma matrices and their derivatives from the state vector
+    state = State(y);
+    
+    g   = state.g;
+    dg  = state.dg;
+    gt  = state.gt;
+    dgt = state.dgt;
 
     % Calculate the normalization matrices
     N  = inv( eye(2) - g*gt );
     Nt = inv( eye(2) - gt*g );
+    
+    % Pack the gamma matrices and their derivatives into a state vector
 
 
 % We will now write the Usadel equations for gamma, tilde{gamma} in the
@@ -90,7 +94,7 @@ tott12 = tott(1,2);
 tott21 = tott(2,1);
 tott22 = tott(2,2);
 
-dydx = [dg rhs ]
+dydx = [vectorize_dg rhs ]
 
 dydx = [dg1; tot11;
     dg2; tot12;
