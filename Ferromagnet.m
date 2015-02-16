@@ -26,7 +26,7 @@ classdef Ferromagnet < handle
                 
         sim_error_abs = 1e-2;                % Maximum absolute error when simulating
         sim_error_rel = 1e-2;                % Maximum relative error when simulating
-        sim_grid_size = 1024;                % Maximum grid size to use in simulations
+        sim_grid_size = 2048;                % Maximum grid size to use in simulations
     end
     
 
@@ -86,8 +86,8 @@ classdef Ferromagnet < handle
             % Set the accuracy of the numerical solution
             options = bvpset('AbsTol',self.sim_error_abs,'RelTol',self.sim_error_rel,'Nmax',self.sim_grid_size);
             
-            tic;
-            disp(sprintf('\n:: Ferromagnet: updating state...'));
+%            tic;
+%            disp(sprintf('\n:: Ferromagnet: updating state...'));
             for m=1:length(self.energies)
                 % Vectorize the current state of the system for the given
                 % energy, and use it as an initial guess for the solution
@@ -112,7 +112,7 @@ classdef Ferromagnet < handle
                 end
                 
                 % Progress information
-                disp(sprintf('--     ETA: %2.f sec.', toc*(1-m/length(self.energies))));
+ %               disp(sprintf('--     ETA: %2.f sec.', toc*(1-m/length(self.energies))));
             end
         end
         
