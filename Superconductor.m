@@ -209,28 +209,41 @@ classdef Superconductor < handle
             % inputs, and calculates the Kuprianov-Lukichev boundary
             % conditions for the system. 
 
-            % Extract the Riccati parameters and their derivatives, and
-            % calculate the normalization matrices
-%             state = State(y1);
-%             
-%             g   = state.g;
-%             dg  = state.dg;
-%             gt  = state.gt;
-%             dgt = state.dgt;
-%             
-%             lg   = state.g;
-%             ldg  = state.dg;
-%             lgt  = state.gt;
-%             ldgt = state.dgt;
-% 
-%             % Calculate the normalization matrices
-%             N  = inv( eye(2) - g*gt );
-%             Nt = inv( eye(2) - gt*g );
-%             
-%             % Left boundary
-%             rl = ( eye(2) - g1*gt2 )*N2*(g2 - g1)/interface_left;
+            % State in the material to the left of the superconductor
+            s0   = State(self.boundary_left(energy_index(energy)));
+            
+            % State at the left end of the superconductor
+            s1   = State(y1);
+            
+            % State at the right end of the superconductor
+            s2   = State(y2);
+            
+            % State in the material to the right of the superconductor
+            s3   = State(self.boundary_right(energy_index(energy)));
+             
+            % Calculate the normalization matrices
+            N0  = inv( eye(2) - s0.g*s0.gt );
+            Nt0 = inv( eye(2) - s0.gt*s0.g );
 
-            residue = y1-y2;
+            N1  = inv( eye(2) - s1.g*s1.gt );
+            Nt1 = inv( eye(2) - s1.gt*s1.g );
+
+            N2  = inv( eye(2) - s2.g*s2.gt );
+            Nt2 = inv( eye(2) - s2.gt*s2.g );
+
+            N3  = inv( eye(2) - s3.g*s3.gt );
+            Nt3 = inv( eye(2) - s3.gt*s3.g );
+            
+            % Calculate the deviation from the Kuprianov--Lukichev boundary
+            % conditions, and store the results back into State instances
+            s1.dg  = s1.dg  - ( eye(2) - s1.g*s0.gt )*N0*(  s0.g  - s1.g  )/interface_left;
+            s1.dgt = s1.dgt - ( eye(2) - s1.gt*s0.g )*Nt0*( s0.gt - s1.gt )/interface_left;
+            
+            s2.dg  = s2.dg  - ( eye(2) - s2.g*s3.gt )*N3*(  s3.g  - s2.g  )/interface_right;
+            s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s3.gt - s2.gt )/interface_right;
+
+            % Vectorize the results of the calculations, and return it            
+            residue = [s1.vectorize_dg s1.vectorize_dgt s2.vectorize_dg s2.vectorize_dgt];
         end
         
         function gap = gap_calculate(self, position)
