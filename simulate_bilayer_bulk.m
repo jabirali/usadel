@@ -22,8 +22,8 @@ function simulate_bilayer_bulk()
         end
 
         % Display progress information and make sure results can be saved
-        fprintf('-- Worker %2.0f: commencing calculation for h=%2.2f, a=%2.2f\n', taskID, h(i), a(j));
-        filename = sprintf('ferromagnet_h%2.2f_a%2.2f', h(i), a(j))
+        fprintf(':: Worker %2.0f: commencing calculation for h=%2.2f, a=%2.2f\n', taskID, h(i), a(j));
+        filename = sprintf('ferromagnet_h%2.2f_a%2.2f', h(i), a(j));
         parsave(filename, 'f');
 
         % Instantiate a ferromagnet
@@ -46,7 +46,7 @@ function simulate_bilayer_bulk()
         parsave(filename, f);
 
         % Display progress information
-        fprintf('-- Worker %2.0f: saving results to "%s".\n', taskID, filename);
+        fprintf(':: Worker %2.0f: saving results to "%s".\n', taskID, filename);
     end
 end
 
