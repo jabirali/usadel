@@ -111,17 +111,29 @@ classdef State
             % Convert part of the internal data structure to a vector shape
             result = reshape(self.dgt,  1, 4);
         end
-
-        function result = singlet(self, exchange)
-            % Calculate the singlet component of g (proportional to iσ^y)
-            result = (self.g(1,2) - self.g(2,1))/2;
+        
+        function g = eval_g(self)
+            % Return the Green's function matrix g (change from Riccati parametrization to normal Green's function)
+            g = ( eye(2) - self.g*self.gt ) \ ( eye(2) + self.g*self.gt );
         end
         
-        function result = triplet(self, exchange)
-            % Calculate the triplet component (proportional to [σ^x,σ^y,σ^z]iσ^y)
-            result = [(self.g(2,2) - self.g(1,1))/2,                ...
-                      (self.g(1,1) + self.g(2,2))/2i,               ...
-                      (self.g(1,2) + self.g(2,1))/2];
+        function f = eval_f(self)
+            % Return the anomalous Green's function matrix f (change from Riccati parametrization to normal Green's function)
+            f = 2 * (eye(2) - self.g*self.gt ) \ self.g;
+        end
+        
+        function result = singlet(self)
+            % Calculate the singlet component of the Green's function (proportional to iσ^y)
+            f = self.eval_f;
+            result = (f(1,2) - f(2,1))/2;
+        end
+        
+        function result = triplet(self)
+            % Calculate the triplet component of the Green's function (proportional to [σ^x,σ^y,σ^z]iσ^y)
+            f = self.eval_f;
+            result = [(f(2,2) - f(1,1))/2,                ...
+                      (f(1,1) + f(2,2))/2i,               ...
+                      (f(1,2) + f(2,1))/2];
         end
         
         function result = srtc(self, exchange)

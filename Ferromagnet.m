@@ -1,6 +1,6 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Created 2015-02-15
-% Updated 2015-02-15
+% Created 2015-02-16
+% Updated 2015-02-16
 %
 % This defines a data structure that describes the physical state of
 % ferromagnetic material with spin-orbit coupling for a given range
@@ -39,6 +39,14 @@ classdef Ferromagnet < handle
             self.energies  = energies;
             self.states(length(positions), length(energies)) = 0;
             
+            % Initialize the internal state to a weak bulk superconductor
+            self.states(length(positions), length(energies)) = 0;
+            for i=1:length(positions)
+                for j=1:length(energies)
+                    self.states(i,j) = Superconductor.Bulk(energies(j), 0.1);
+                end
+            end
+            
             % Set the boundary conditions to empty states by default
             self.boundary_left(length(energies))  = 0;
             self.boundary_right(length(energies)) = 0;    
@@ -74,6 +82,8 @@ classdef Ferromagnet < handle
             % Set the accuracy of the numerical solution
             options = bvpset('AbsTol',1e-2,'RelTol',1e-2,'Nmax',512);
             
+            tic;
+            disp(sprintf('\n:: Ferromagnet: updating state...'));
             for m=1:length(self.energies)
                 % Vectorize the current state of the system for the given
                 % energy, and use it as an initial guess for the solution
@@ -96,6 +106,9 @@ classdef Ferromagnet < handle
                 for n=1:length(self.positions)
                     self.states(n,m) = State(solution(:,n));
                 end
+                
+                % Progress information
+                disp(sprintf('--     ETA: %2.f sec.', toc*(1-m/length(self.energies))));
             end
         end
         
@@ -140,7 +153,7 @@ classdef Ferromagnet < handle
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the ferromagnet
             d2g  =  - 2*dg*Nt*gt*dg                                                             ...
-                    - 2i*(energy/diffusion)*g                                                   ...
+                    - 2i*((energy+0.001i)/diffusion)*g                                                   ...
                     - i*(exchange/diffusion)*(SpinVector.Pauli*g - g*conj(SpinVector.Pauli))    ...
                     + 2i*(spinorbit.z + g*conj(spinorbit.z)*gt)*N*dg                            ...
                     + 2i*dg*Nt*(conj(spinorbit.z) + gt*spinorbit.z*g)                           ...
@@ -148,7 +161,7 @@ classdef Ferromagnet < handle
                     + (spinorbit^2*g - g*conj(spinorbit)^2);
             
             d2gt =  - 2*dgt*N*g*dgt                                                             ...
-                    - 2i*(energy/diffusion)*gt                                                  ...
+                    - 2i*((energy+0.001i)/diffusion)*gt                                                  ...
                     + i*(exchange/diffusion)*(conj(SpinVector.Pauli)*gt - gt*SpinVector.Pauli)  ...
                     - 2i*(conj(spinorbit.z) + gt*spinorbit.z*g)*Nt*dgt                          ...
                     - 2i*dgt*N*(spinorbit.z + g*conj(spinorbit.z)*gt)                           ...

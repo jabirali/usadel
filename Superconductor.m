@@ -1,6 +1,6 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-15
-% Updated 2015-02-15
+% Updated 2015-02-16
 %
 % This defines a data structure that describes the physical state of
 % superconducting material for a given range of positions and energies.
@@ -94,8 +94,11 @@ classdef Superconductor < handle
             % This function updates the vector containing the current
             % estimate of the superconducting gap at equilibrium.
             
+            tic;
+            disp(sprintf('\n:: Superconductor: updating gap...'));
             for n=1:length(self.positions)
-                  self.gap(n) = self.gap_calculate(self, self.positions(n));
+                self.gap(n) = self.gap_calculate(self, self.positions(n));
+                disp(sprintf('--      ETA: %2.f sec.', toc*(1.0-n/length(self.positions))));
             end
         end
         
@@ -107,6 +110,8 @@ classdef Superconductor < handle
             % Set the accuracy of the numerical solution
             options = bvpset('AbsTol',1e-2,'RelTol',1e-2,'Nmax',512);
             
+            tic;
+            disp(sprintf('\n:: Superconductor: updating state...'));
             for m=1:length(self.energies)
                 % Vectorize the current state of the system for the given
                 % energy, and use it as an initial guess for the solution
@@ -124,11 +129,14 @@ classdef Superconductor < handle
                 % Solve the differential equation, and evaluate the
                 % solution on the position vector of the superconductor 
                 solution = deval(bvp6c(jc,bc,initial,options), self.positions);
-
+                
                 % Update the current state of the system based on the solution
                 for n=1:length(self.positions)
                     self.states(n,m) = State(solution(:,n));
                 end
+                
+                % Progress information
+                disp(sprintf('--     ETA: %2.f sec.', toc*(1.0-m/length(self.energies))));
             end
         end
         
@@ -187,11 +195,11 @@ classdef Superconductor < handle
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the superconductor
             d2g  =  - 2*dg*Nt*gt*dg ...
-                    - 2i*(energy/diff)*g   ...
+                    - 2i*((energy+0.001i)/diff)*g   ...
                     - (gap/diff)*(SpinVector.Pauli.y - g * SpinVector.Pauli.y * g);
             
             d2gt =  - 2*dgt*N*g*dgt  ...
-                    - 2i*(energy/diff)*gt   ...
+                    - 2i*((energy+0.001i)/diff)*gt   ...
                     + (gap/diff)*(SpinVector.Pauli.y - gt * SpinVector.Pauli.y * gt);
             
             % Fill the results of the calculations back into a 'State' object
@@ -209,7 +217,7 @@ classdef Superconductor < handle
             % position 'x', the current state vector 'y', and an energy as
             % inputs, and calculates the Kuprianov-Lukichev boundary
             % conditions for the system. 
-
+            
             % State in the material to the left of the superconductor
             s0   = State(self.boundary_left(self.energy_index(energy)));
             
@@ -225,12 +233,6 @@ classdef Superconductor < handle
             % Calculate the normalization matrices
             N0  = inv( eye(2) - s0.g*s0.gt );
             Nt0 = inv( eye(2) - s0.gt*s0.g );
-
-            N1  = inv( eye(2) - s1.g*s1.gt );
-            Nt1 = inv( eye(2) - s1.gt*s1.g );
-
-            N2  = inv( eye(2) - s2.g*s2.gt );
-            Nt2 = inv( eye(2) - s2.gt*s2.g );
 
             N3  = inv( eye(2) - s3.g*s3.gt );
             Nt3 = inv( eye(2) - s3.gt*s3.g );
