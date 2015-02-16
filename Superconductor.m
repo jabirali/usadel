@@ -16,11 +16,11 @@ classdef Superconductor < handle
         gap         = [];                    % Superconducting gap at each position
         states      = State.empty(0,0);      % Green's functions for each position and energy
         
-        temperature     = 1e-16;             % Temperature of the system   (default: absolute zero)
-        scaling         = 1;                 % Material constant N₀λ       (default: unity)
-        diffusion       = 1;                 % Diffusion constant          (default: unity)
-        interface_left  = inf;               % Interface parameter (left)  (default: vacuum)
-        interface_right = inf;               % Interface parameter (right) (default: vacuum)
+        temperature     = 1e-16;             % Temperature of the system 
+        scaling         = 1;                 % Material constant N₀λ
+        diffusion       = 1;                 % Diffusion constant
+        interface_left  = inf;               % Interface parameter zeta (left)
+        interface_right = inf;               % Interface parameter zeta (right)
         
         boundary_left   = State.empty(0);    % Boundary condition (left)   (default: vacuum)
         boundary_right  = State.empty(0);    % Boundary condition (right)  (default: vacuum)
@@ -55,7 +55,7 @@ classdef Superconductor < handle
         
         function index = position_index(self, position)
             % Returns the vector index corresponding to a given energy value
-            index = find(abs(self.positions-position) < 1e-6, 1, 'first');
+            index = find(abs(self.positions-position) < 1e-5, 1, 'first');
             if ~isscalar(index)
                 error('Superconductor.position_index: Provided value is not in the position vector!');
             end
@@ -63,7 +63,7 @@ classdef Superconductor < handle
 
         function index = energy_index(self, energy)
             % Returns the vector index corresponding to a given energy value
-            index = find(abs(self.energies-energy) < 1e-6, 1, 'first');
+            index = find(abs(self.energies-energy) < 1e-5, 1, 'first');
             if ~isscalar(index)
                 error('Superconductor.energy_index: Provided value is not in the energy vector!');
             end
@@ -76,11 +76,12 @@ classdef Superconductor < handle
             result = ( max(abs(self.gap)) < 1e-4 );
         end
         
-        function result = gap_interpolate(self, x)
-            % This function performs a linear interpolation of the
-            % superconducting gap as a function of position, and returns
-            % the value in a given point.
-            result = interp1(self.positions, self.gap, x);
+        function result = gap_lookup(self, x)
+            % This function performs a nearest-neighbor interpolation of
+            % the superconducting gap as a function of position, and
+            % returns the value in a given point.
+            
+            result = interp1(self.positions, self.gap, x, 'nearest', 'extrap');
         end
         
         
@@ -104,7 +105,7 @@ classdef Superconductor < handle
             % estimate for the superconducting gap.
 
             % Set the accuracy of the numerical solution
-            options = bvpset('AbsTol',1e-04,'RelTol',1e-04,'Nmax',1000);
+            options = bvpset('AbsTol',1e-2,'RelTol',1e-2,'Nmax',512);
             
             for m=1:length(self.energies)
                 % Vectorize the current state of the system for the given
@@ -171,7 +172,7 @@ classdef Superconductor < handle
             
             % Extract diffusion constant and superconducting gap
             diff = self.diffusion;
-            gap  = self.gap_interpolate(x);
+            gap  = self.gap_lookup(x);
             
             % Extract the Riccati parameters and their derivatives
             g   = state.g;
@@ -210,7 +211,7 @@ classdef Superconductor < handle
             % conditions for the system. 
 
             % State in the material to the left of the superconductor
-            s0   = State(self.boundary_left(energy_index(energy)));
+            s0   = State(self.boundary_left(self.energy_index(energy)));
             
             % State at the left end of the superconductor
             s1   = State(y1);
@@ -219,7 +220,7 @@ classdef Superconductor < handle
             s2   = State(y2);
             
             % State in the material to the right of the superconductor
-            s3   = State(self.boundary_right(energy_index(energy)));
+            s3   = State(self.boundary_right(self.energy_index(energy)));
              
             % Calculate the normalization matrices
             N0  = inv( eye(2) - s0.g*s0.gt );
@@ -234,16 +235,20 @@ classdef Superconductor < handle
             N3  = inv( eye(2) - s3.g*s3.gt );
             Nt3 = inv( eye(2) - s3.gt*s3.g );
             
+            % Calculate interface parameters in the Kuprianov-Lukichev B.C.
+            param_left  = abs(self.positions(end) - self.positions(1)) * self.interface_left;
+            param_right = abs(self.positions(end) - self.positions(1)) * self.interface_right;
+            
             % Calculate the deviation from the Kuprianov--Lukichev boundary
             % conditions, and store the results back into State instances
-            s1.dg  = s1.dg  - ( eye(2) - s1.g*s0.gt )*N0*(  s0.g  - s1.g  )/interface_left;
-            s1.dgt = s1.dgt - ( eye(2) - s1.gt*s0.g )*Nt0*( s0.gt - s1.gt )/interface_left;
+            s1.dg  = s1.dg  - ( eye(2) - s1.g*s0.gt )*N0*(  s0.g  - s1.g  )/param_left;
+            s1.dgt = s1.dgt - ( eye(2) - s1.gt*s0.g )*Nt0*( s0.gt - s1.gt )/param_left;
             
-            s2.dg  = s2.dg  - ( eye(2) - s2.g*s3.gt )*N3*(  s3.g  - s2.g  )/interface_right;
-            s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s3.gt - s2.gt )/interface_right;
+            s2.dg  = s2.dg  - ( eye(2) - s2.g*s3.gt )*N3*(  s3.g  - s2.g  )/param_right;
+            s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s3.gt - s2.gt )/param_right;
 
             % Vectorize the results of the calculations, and return it            
-            residue = [s1.vectorize_dg s1.vectorize_dgt s2.vectorize_dg s2.vectorize_dgt];
+            residue = [s1.vectorize_dg s1.vectorize_dgt s2.vectorize_dg s2.vectorize_dgt]';
         end
         
         function gap = gap_calculate(self, position)

@@ -89,7 +89,7 @@ classdef State
         function result = vectorize(self)
             % Convert the internal data structure to a vector shape
             result = [self.vectorize_g  self.vectorize_dg ...
-                      self.vectorize_gt self.vectorize_dgt];
+                      self.vectorize_gt self.vectorize_dgt]';
         end
         
         function result = vectorize_g(self)
