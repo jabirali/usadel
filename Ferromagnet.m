@@ -121,6 +121,7 @@ classdef Ferromagnet < handle
                 
                 % Progress information
                 disp(sprintf('-- Worker %2.0f: ETA: %2.f sec [ %2.f / %2.f ]', taskID, toc*(1-m/length(self.energies)), m, length(self.energies)));
+                pause(0.1);
             end
         end
         
@@ -181,10 +182,10 @@ classdef Ferromagnet < handle
                     + (conj(spinorbit)^2*gt - gt*spinorbit^2);
             
             % Fill the results of the calculations back into a 'State' object
-            state.g   = dg;
-            state.dg  = d2g;
-            state.gt  = dgt;
-            state.dgt = d2gt;
+            state.g   = dg   + 0.0001i;
+            state.dg  = d2g  + 0.0001i;
+            state.gt  = dgt  - 0.0001i;
+            state.dgt = d2gt - 0.0001i;
             
             % Pack the results into a state vector
             dydx = state.vectorize;

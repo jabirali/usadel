@@ -1,4 +1,7 @@
 function simulate_bilayer_bulk()
+    % Log output to a file
+    diary output/simulation.log
+    
     % How many positions and energies to consider
     positions = 64;
     energies  = 20;
@@ -25,6 +28,7 @@ function simulate_bilayer_bulk()
         fprintf(':: Worker %2.0f: commencing calculation for h=%2.2f, a=%2.2f\n', taskID, h(i), a(j));
         filename = sprintf('ferromagnet_h%2.2f_a%2.2f', h(i), a(j));
         parsave(filename, 'f');
+        pause(0.1);
 
         % Instantiate a ferromagnet
         f = Ferromagnet( linspace(0,1,positions), linspace(0.01, 1.3, energies) );
@@ -47,7 +51,11 @@ function simulate_bilayer_bulk()
 
         % Display progress information
         fprintf(':: Worker %2.0f: saving results to "%s".\n', taskID, filename);
+        pause(0.1);
     end
+    
+    % Turn off the logging function
+    diary off
 end
 
 function parsave(filename, output)
