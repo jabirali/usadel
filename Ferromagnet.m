@@ -91,7 +91,7 @@ classdef Ferromagnet < handle
             if isempty(task)
                 taskID = 0;
             else
-                taskID = task.ID
+                taskID = task.ID;
             end
 
             % Start a timer to predict ETA

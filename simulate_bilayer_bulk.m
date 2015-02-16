@@ -18,7 +18,7 @@ function simulate_bilayer_bulk()
         if isempty(task)
             taskID = 0;
         else
-            taskID = task.ID
+            taskID = task.ID;
         end
 
         % Display progress information and make sure results can be saved
