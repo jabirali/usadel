@@ -122,6 +122,10 @@ classdef State
             f = 2 * (eye(2) - self.g*self.gt ) \ self.g;
         end
         
+        function result = eval_ldos(self)
+            result = trace(real(self.eval_g))/2;
+        end
+        
         function result = singlet(self)
             % Calculate the singlet component of the Green's function (proportional to iσ^y)
             f = self.eval_f;

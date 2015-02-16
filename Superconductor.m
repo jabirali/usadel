@@ -24,6 +24,10 @@ classdef Superconductor < handle
         
         boundary_left   = State.empty(0);    % Boundary condition (left)   (default: vacuum)
         boundary_right  = State.empty(0);    % Boundary condition (right)  (default: vacuum)
+        
+        sim_error_abs = 1e-2;                % Maximum absolute error when simulating
+        sim_error_rel = 1e-2;                % Maximum relative error when simulating
+        sim_grid_size = 1024;                % Maximum grid size to use in simulations
     end
     
 
@@ -108,7 +112,7 @@ classdef Superconductor < handle
             % estimate for the superconducting gap.
 
             % Set the accuracy of the numerical solution
-            options = bvpset('AbsTol',1e-2,'RelTol',1e-2,'Nmax',512);
+            options = bvpset('AbsTol',self.sim_error_abs,'RelTol',self.sim_error_rel,'Nmax',self.sim_grid_size);
             
             tic;
             disp(sprintf('\n:: Superconductor: updating state...'));
