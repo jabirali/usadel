@@ -26,7 +26,7 @@ classdef Ferromagnet < handle
                 
         sim_error_abs = 1e-2;                % Maximum absolute error when simulating
         sim_error_rel = 1e-2;                % Maximum relative error when simulating
-        sim_grid_size = 256;                 % Maximum grid size to use in simulations
+        sim_grid_size = 512;                 % Maximum grid size to use in simulations
     end
     
 
@@ -47,7 +47,7 @@ classdef Ferromagnet < handle
             self.states(length(positions), length(energies)) = 0;
             for i=1:length(positions)
                 for j=1:length(energies)
-                    self.states(i,j) = Superconductor.Bulk(energies(j), 0.1);
+                    self.states(i,j) = Superconductor.Bulk(energies(j), 1);
                 end
             end
             
@@ -110,18 +110,29 @@ classdef Ferromagnet < handle
                 jc = @(x,y) Ferromagnet.jacobian(self,x,y,self.energies(m));
                 bc = @(a,b) Ferromagnet.boundary(self,a,b,self.energies(m));
                 
-                % Solve the differential equation, and evaluate the
-                % solution on the position vector of the ferromagnet 
-                solution = deval(bvp6c(jc,bc,initial,options), self.positions);
+                % Try to solve the differential equation; if the solver
+                % returns an error, don't crash the program, but display a
+                % warning message and continue.
+                try
+                    % Solve the differential equation, and evaluate the
+                    % solution on the position vector of the ferromagnet 
+                    solution = deval(bvp6c(jc,bc,initial,options), self.positions);
 
-                % Update the current state of the system based on the solution
-                for n=1:length(self.positions)
-                    self.states(n,m) = State(solution(:,n));
+                    % Update the current state of the system based on the solution
+                    for n=1:length(self.positions)
+                        self.states(n,m) = State(solution(:,n));
+                    end
+                    
+                    % Progress information
+                    disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] ETA: %2.f min', taskID, m, length(self.energies)), toc*(1-m/length(self.energies))/60);
+   
+                catch
+                    % Display a warning message if the computation failed
+                    disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] unable to converge, skipping...', taskID, m, length(self.energies)));
                 end
                 
-                % Progress information
-                disp(sprintf('-- Worker %2.0f: ETA: %2.f sec [ %2.f / %2.f ]', taskID, toc*(1-m/length(self.energies)), m, length(self.energies)));
-                pause(0.1);
+                % Small time delay to prevent the system from shutting us down
+                pause(0.25);
             end
         end
         

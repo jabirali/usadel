@@ -27,7 +27,7 @@ classdef Superconductor < handle
         
         sim_error_abs = 1e-2;                % Maximum absolute error when simulating
         sim_error_rel = 1e-2;                % Maximum relative error when simulating
-        sim_grid_size = 256;                 % Maximum grid size to use in simulations
+        sim_grid_size = 512;                 % Maximum grid size to use in simulations
     end
     
 
@@ -136,18 +136,29 @@ classdef Superconductor < handle
                 jc = @(x,y) Superconductor.jacobian(self,x,y,self.energies(m));
                 bc = @(a,b) Superconductor.boundary(self,a,b,self.energies(m));
                 
-                % Solve the differential equation, and evaluate the
-                % solution on the position vector of the superconductor 
-                solution = deval(bvp6c(jc,bc,initial,options), self.positions);
-                
-                % Update the current state of the system based on the solution
-                for n=1:length(self.positions)
-                    self.states(n,m) = State(solution(:,n));
+                % Try to solve the differential equation; if the solver
+                % returns an error, don't crash the program, but display a
+                % warning message and continue.
+                try
+                    % Solve the differential equation, and evaluate the
+                    % solution on the position vector of the superconductor 
+                    solution = deval(bvp6c(jc,bc,initial,options), self.positions);
+
+                    % Update the current state of the system based on the solution
+                    for n=1:length(self.positions)
+                        self.states(n,m) = State(solution(:,n));
+                    end
+
+                    % Progress information
+                    disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] ETA: %2.f min', taskID, m, length(self.energies)), toc*(1-m/length(self.energies))/60);
+   
+                catch
+                    % Display a warning message if the computation failed
+                    disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] unable to converge, skipping...', taskID, m, length(self.energies)));
                 end
                 
-                % Progress information
-                disp(sprintf('-- Worker %2.0f: ETA: %2.f sec [ %2.f / %2.f ]', taskID, toc*(1-m/length(self.energies)), m, length(self.energies)));
-                pause(0.1);
+                % Small time delay to prevent the system from shutting us down
+                pause(0.25);
             end
         end
         
@@ -160,7 +171,7 @@ classdef Superconductor < handle
             self.state_update;
             self.gap_update;
         end
-    end 
+        end 
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,6 +183,8 @@ classdef Superconductor < handle
             % and returns a State object with Green's functions that correspond to
             % a BCS superconductor bulk state.
             
+            % FIXME: Is this the solution for Green's functions, and not
+            % the solution for Riccati parameters? Can the guess be improved?
             theta = atanh(gap/(energy+0.001i));
             c     = cosh(theta);
             s     = sinh(theta);
