@@ -27,7 +27,7 @@ classdef Superconductor < handle
         
         sim_error_abs = 1e-2;                % Maximum absolute error when simulating
         sim_error_rel = 1e-2;                % Maximum relative error when simulating
-        sim_grid_size = 512;                 % Maximum grid size to use in simulations
+        sim_grid_size = 128;                 % Maximum grid size to use in simulations
     end
     
 
