@@ -14,8 +14,8 @@ classdef Superconductor < handle
         % Properties that determine the physical characteristics of the system
         positions   = [];                    % Positions in the superconductor (relative to the material length)
         energies    = [];                    % Energies of the superconductor (relative to the Thouless energy)
-        gap         = [];                    % Superconducting gap at each position
         states      = State.empty(0,0);      % Riccati parameters and their derivatives for each position and energy
+        gap = [];
 
         length          = 1;                 % Scaling factor for the position vector (length of the system)
         strength        = 1;                 % Scaling factor in the gap equation (material constant N₀λ)
@@ -56,20 +56,19 @@ classdef Superconductor < handle
             self.diffusion = material_diffusion;
             self.strength  = material_strength;
             self.length    = material_length;
-            
-            % Use eq. (3.34) in Tinkham to estimate the zero-temperature gap
-            self.gap       = abs(energies(end))/sinh(inv(material_strength)) ...
-                           * ones(size(positions));
-            
+
             % Set the maximum grid size for numerical calculations to 4x
             % the number of positions, rounded up to nearest power of two
             self.sim_grid_size = 2^(3+floor(log2(length(positions)-1)));
+            
+            % Use eq. (3.34) in Tinkham to estimate the zero-temperature gap
+            gap = abs(energies(end))/sinh(inv(material_strength));
             
             % Initialize the internal state to a BCS bulk superconductor
             self.states(length(positions), length(energies)) = 0;
             for i=1:length(positions)
                 for j=1:length(energies)
-                    self.states(i,j) = Superconductor.Bulk(energies(j), self.gap(1));
+                    self.states(i,j) = Superconductor.Bulk(energies(j), gap);
                 end
             end
             
@@ -100,16 +99,10 @@ classdef Superconductor < handle
             % everywhere in the superconductor.
             result = ( max(abs(self.gap)) < 1e-4 );
         end
-        
-        function result = gap_lookup(self, x)
-            % This function performs a nearest-neighbor interpolation of
-            % the superconducting gap as a function of position, and
-            % returns the value in a given point.
-            
-            result = interp1(self.positions, self.gap, x, 'nearest', 'extrap');
+                
+        function r = gap_lookup(self, energy)
+            r = 1;
         end
-        
-        
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Define methods that update the internal state of the object
@@ -138,7 +131,7 @@ classdef Superconductor < handle
             for m=1:length(self.energies)
                 % Vectorize the current state of the system for the given
                 % energy, and use it as an initial guess for the solution
-                current = zeros(16,length(self.positions));
+                current = zeros(17,length(self.positions));
                 for n=1:length(self.positions)
                     current(:,n) = self.states(n,m).vectorize;
                 end
@@ -146,13 +139,13 @@ classdef Superconductor < handle
                 
                 % Partially evaluate the Jacobian and boundary conditions
                 % for the current superconductor energy
-                jc = @(x,y) Superconductor.jacobian(self,x,y,self.energies(m));
-                bc = @(a,b) Superconductor.boundary(self,a,b,self.energies(m));
+                jc = @(x,y) self.jacobian(self,x,y,self.energies(m));
+                bc = @(a,b) self.boundary(self,a,b,self.energies(m));
                 
                 % Try to solve the differential equation; if the solver
                 % returns an error, don't crash the program, but display a
                 % warning message and continue.
-                try
+                
                     % Solve the differential equation, and evaluate the
                     % solution on the position vector of the superconductor 
                     solution = deval(bvp6c(jc,bc,initial,options), self.positions);
@@ -165,7 +158,7 @@ classdef Superconductor < handle
                     % Progress information
                     self.print('[ %2.f / %2.f ]   ETA: %2.f min', m, length(self.energies), toc*(1-(m-1)/length(self.energies))/60);
 
-                catch
+                try
                     % Display a warning message if the computation failed
                     self.print('[ %2.f / %2.f ] unable to converge, skipping...', m, length(self.energies));
                 end
@@ -243,12 +236,14 @@ classdef Superconductor < handle
             % This function takes as its input an energy and a superconducting gap,
             % and returns a State object with Riccati parametrized Green's functions
             % that corresponds to a BCS superconductor bulk state.
+            
             theta = atanh(gap/(energy+0.001i));
             c     = cosh(theta);
             s     = sinh(theta);
             
             result = State([0,  s/(1+c); -s/(1+c), 0], 0,            ...
-                           [0, -s/(1+c);  s/(1+c), 0], 0);
+                           [0, -s/(1+c);  s/(1+c), 0], 0,            ...
+                           gap);
         end
     
         function dydx = jacobian(self, x, y, energy)
@@ -291,6 +286,7 @@ classdef Superconductor < handle
             state.dg  = d2g;
             state.gt  = dgt;
             state.dgt = d2gt;
+            state.gap = 0;
             
             % Pack the results into a state vector
             dydx = state.vectorize;
@@ -330,7 +326,8 @@ classdef Superconductor < handle
             s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s3.gt - s2.gt )/self.interface_right;
 
             % Vectorize the results of the calculations, and return it            
-            residue = [s1.vectorize_dg s1.vectorize_dgt s2.vectorize_dg s2.vectorize_dgt]';
+            residue = [s1.vectorize_dg s1.vectorize_dgt...
+                       s2.vectorize_dg s2.vectorize_dgt 1]';
         end
         
         function gap = gap_calculate(self, position)
