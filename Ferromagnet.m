@@ -123,13 +123,15 @@ classdef Ferromagnet < handle
                         self.states(n,m) = State(solution(:,n));
                     end
                     
-                    % Progress information
-                    disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] ETA: %2.f min', taskID, m, length(self.energies)), toc*(1-m/length(self.energies))/60);
-   
                 catch
                     % Display a warning message if the computation failed
                     disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] unable to converge, skipping...', taskID, m, length(self.energies)));
+                   
+                    % TODO: Adaptive grid size?
                 end
+
+               % Progress information
+               disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] ETA: %2.f min', taskID, m, length(self.energies), toc*(1-m/length(self.energies))/60));
                 
                 % Small time delay to prevent the system from shutting us down
                 pause(0.25);
