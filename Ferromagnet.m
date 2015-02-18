@@ -1,16 +1,18 @@
-% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Created 2015-02-16
-% Updated 2015-02-16
-%
 % This defines a data structure that describes the physical state of
 % ferromagnetic material with spin-orbit coupling for a given range
 % of positions and energies.
+%
+% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
+% Inspired by a similar program by Sol Jacobsen
+% Created 2015-02-16
+% Updated 2015-02-18
 
 classdef Ferromagnet < handle
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Define the internal variables for the data structure
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     properties (GetAccess=public, SetAccess=public)
+        % Properties that determine the physical characteristics of the system
         positions   = [];                    % Positions in the ferromagnet
         energies    = [];                    % Energies of the ferromagnet
         states      = State.empty(0,0);      % Green's functions for each position and energy
@@ -24,6 +26,7 @@ classdef Ferromagnet < handle
         boundary_left   = State.empty(0);    % Boundary condition (left)   (default: vacuum)
         boundary_right  = State.empty(0);    % Boundary condition (right)  (default: vacuum)
                 
+        % Properties that determine the behavior of the program
         sim_error_abs = 1e-2;                % Maximum absolute error when simulating
         sim_error_rel = 1e-2;                % Maximum relative error when simulating
         sim_grid_size = 128;                 % Maximum grid size to use in simulations

@@ -1,11 +1,10 @@
-% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Created 2015-02-14
-% Updated 2015-02-15
-%
 % Define a data structure to describe objects with both a 3x1 vector
 % structure in geometric space and a 2x2 matrix structure in spin
 % space, such as the Pauli vector, and in general SU(2) vector fields.
-    
+%
+% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
+% Created 2015-02-14
+% Updated 2015-02-16
     
 classdef SpinVector
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,11 +51,11 @@ classdef SpinVector
         % Overloading of display functions
         function display(self)
             name = inputname(1);
-            disp(sprintf(':: %s.x:    [projection on x-axis]', name));
+            disp(sprintf(':: %s.x:', name));
             disp([self.x]);
-            disp(sprintf('\n:: %s.y:    [projection on y-axis]', inputname(1)));
+            disp(sprintf('\n:: %s.y:', inputname(1)));
             disp([self.y]);
-            disp(sprintf('\n:: %s.z:    [projection on z-axis]', inputname(1)));
+            disp(sprintf('\n:: %s.z:', inputname(1)));
             disp([self.z]);
         end        
         

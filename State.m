@@ -1,7 +1,3 @@
-% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Created 2015-02-14
-% Updated 2015-02-15
-%
 % Define a data structure to describe the state of the physical system
 % for a given position and energy. This is done by describing the
 % Green's function 'g', it's tilde conjugate 'gt', and their first
@@ -11,6 +7,10 @@
 % solvers, and therefore provides the method 'vectorize' to pack the
 % internal variables in a vector format, and constructor State(...)
 % that is able to unpack this vector format.
+%
+% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
+% Created 2015-02-14
+% Updated 2015-02-16
 
 
 classdef State
@@ -75,13 +75,13 @@ classdef State
         % Overloading of the display function
         function display(self)
             name = inputname(1);
-            disp(sprintf(':: %s.g:      [Riccati parameter γ]', name));
+            fprintf(':: %s.g:            [  Riccati parameter g  ]\n', name);
             disp([self.g]);
-            disp(sprintf('\n:: %s.dg:     [Derivative dγ/dx]', inputname(1)));
+            fprintf('\n:: %s.dg:           [   Derivative  dg/dz   ]\n', inputname(1));
             disp([self.dg]);
-            disp(sprintf('\n:: %s.gt:     [Riccati parameter γ~]', inputname(1)));
+            fprintf('\n:: %s.gt:           [  Riccati parameter g~ ]\n', inputname(1));
             disp([self.gt]);
-            disp(sprintf('\n:: %s.dgt:    [Derivative dγ~/dx]', inputname(1)));
+            fprintf('\n:: %s.dgt:          [   Derivative  dg~/dz  ]\n', inputname(1));
             disp([self.dgt]);
         end
 
