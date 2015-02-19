@@ -35,7 +35,7 @@ classdef Superconductor < handle
 
         debug         = true;                % Whether to show intermediate results or not
         plot          = true;                % Whether to plot intermediate results or not
-        delay         = 5;                   % How long to wait between program iterations
+        delay         = 0;                   % How long to wait between program iterations
     end
     
 
@@ -109,6 +109,7 @@ classdef Superconductor < handle
             % returns the value in a given point.
             
             result = interp1(self.positions, self.gap, x, 'nearest', 'extrap');
+            % TODO: Polynomial fit
         end
         
         

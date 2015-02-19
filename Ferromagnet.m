@@ -35,7 +35,7 @@ classdef Ferromagnet < handle
         
         debug         = true;                % Whether to show intermediate results or not
         plot          = true;                % Whether to plot intermediate results or not
-        delay         = 5;                   % How long to wait between program iterations
+        delay         = 0;                   % How long to wait between program iterations
     end
     
 
