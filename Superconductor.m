@@ -1,10 +1,11 @@
 % This defines a data structure that describes the physical state of a
 % superconducting material for a given range of positions and energies.
+% The most demanding calculations are parallellized using SPMD.
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Inspired by a similar program by Sol Jacobsen
+% Inspired by a similar program written by Sol Jacobsen
 % Created 2015-02-15
-% Updated 2015-02-18
+% Updated 2015-02-19
 
 classdef Superconductor < handle
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -17,8 +18,8 @@ classdef Superconductor < handle
         gap         = [];                    % Superconducting gap at each position
         states      = State.empty(0,0);      % Riccati parameters and their derivatives for each position and energy
 
-        length          = 1;                 % Scaling factor for the position vector (length of the system)
-        strength        = 1;                 % Scaling factor in the gap equation (material constant N₀λ)
+        length          = 1;                 % Length of the system
+        strength        = 1;                 % Material constant N₀λ
         temperature     = 0;                 % Temperature of the system (defaults to absolute zero)
         diffusion       = 1;                 % Diffusion constant
         interface_left  = inf;               % Interface parameter zeta (left)
@@ -43,7 +44,7 @@ end
         % Define constructor and accessor methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 
-        function self = Superconductor(positions, energies, material_length, material_strength, material_diffusion)
+        function self = Superconductor(positions, energies, material_length, material_diffusion, material_strength)
             % Define a constructor which initializes the Superconductor
             % from a vector of positions, a vector of energies (where the
             % last element is the Debye cutoff), the length of the material
@@ -54,8 +55,8 @@ end
             self.positions = positions;
             self.energies  = energies;
             self.diffusion = material_diffusion;
-            self.strength  = material_strength;
             self.length    = material_length;
+            self.strength  = material_strength;
             
             % Use eq. (3.34) in Tinkham to estimate the zero-temperature gap
             self.gap       = abs(energies(end))/sinh(inv(material_strength)) ...
@@ -143,12 +144,12 @@ end
                 bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
             end
                 
-            % Solving the differential equation is slow, and the solution
-            % at different energies are independent, so we parallelize
+            % Solving the differential equation is slow, and the solutions
+            % at different energies are independent, so we parallelize this
             spmd
                 for m=drange(1:length(self.energies))
                     % Progress information
-                    self.print('[ %2.f / %2.f ] iteration starting...', m, length(self.energies));
+                    self.print('[ %2.f / %2.f ]   iteration starting...', m, length(self.energies));
                     
                     % Vectorize the current state of the system for the given
                     % energy, and use it as an initial guess for the solution
@@ -172,11 +173,11 @@ end
                         end
                                     
                         % Progress information
-                        self.print('[ %2.f / %2.f ] iteration complete!', m, length(self.energies));
+                        self.print('[ %2.f / %2.f ]   iteration complete!', m, length(self.energies));
 
                     catch
                         % Display a warning message if the computation failed
-                        self.print('[ %2.f / %2.f ] iteration failed to converge, skipping...', m, length(self.energies));
+                        self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
                     end
                 end
                 
@@ -210,30 +211,67 @@ end
                 self.gap_update;
                 gap_curr = mean(abs(self.gap));
                 
-                % Plot the current gap
+                % Plot the current DOS
                 if self.plot
-                    plot(self.positions, gap_curr);
-                    title('Current estimate of the superconducting gap');
-                    xlabel('Position');
-                    ylabel('Superconducting gap');
-                    pause(0.05);
+                    self.plot_dos;
                 end
             end
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Define miscellaneous methods for showing the internal state
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function plot_dos(self)
+            % Calculate the density of states
+            dos = zeros(length(self.energies), 1);
+            for m=1:length(self.energies)
+                for n=1:length(self.positions)
+                    dos(m) = dos(m) + self.states(n,m).eval_ldos;
+                end
+            end
+                        
+            % Plot a cubic interpolation of the results
+            energies = linspace(0,self.energies(end), 100);
+            plot(energies, pchip(self.energies, dos, energies));
+            xlabel('Energy');
+            ylabel('Density of States');
+        end
+        
+        function plot_dist(self)
+            % Calculate the singlet and triplet distributions
+            singlet = zeros(length(self.positions), 1);
+            triplet = zeros(length(self.positions), 1);
+            for m=1:length(self.energies)
+                for n=1:length(self.positions)
+                    singlet(n) = singlet(n) + norm(self.states(n,m).singlet);
+                    triplet(n) = triplet(n) + norm(self.states(n,m).triplet);
+                end
+            end
+                        
+            % Plot cubic interpolations of the results
+            positions = linspace(0, self.positions(end), 100);
+            plot(positions, pchip(self.positions, singlet, positions), ...
+                 positions, pchip(self.positions, triplet, positions));
+            xlabel('Relative position');
+            ylabel('Distribution');
+            legend('Singlet', 'Triplet');
+        end
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Define miscellaneous methods for use when debugging
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
- 
+
         function print(self,varargin)
             % This function is used to print progress information if the
             % 'debug' flag is set to 'true'.
             
             if self.debug
-                fprintf(':: Superconductor:   %s\n', sprintf(varargin{:}));
+                fprintf(':: Superconductor: %s\n', sprintf(varargin{:}));
             end
         end
-        end 
+    end
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -248,7 +286,7 @@ end
             c     = cosh(theta);
             s     = sinh(theta);
             
-            result = State([0,  s/(1+c); -s/(1+c), 0], 0,            ...
+            result = State([0,  s/(1+c); -s/(1+c), 0], 0, ...
                            [0, -s/(1+c);  s/(1+c), 0], 0);
         end
     

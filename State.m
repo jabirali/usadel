@@ -1,7 +1,7 @@
 % Define a data structure to describe the state of the physical system
 % for a given position and energy. This is done by describing the
-% Green's function 'g', it's tilde conjugate 'gt', and their first
-% derivatives 'dg' and 'dgt' for that configuration.
+% Riccati parametrized Green's function 'g', it's tilde conjugate 'gt', 
+% and their first derivatives 'dg' and 'dgt' for that configuration.
 %
 % This class is mainly intended for use with differential equation
 % solvers, and therefore provides the method 'vectorize' to pack the
@@ -34,6 +34,7 @@ classdef State
             % This is the default constructor, which takes as its input either:
             %  (1) 4 2x2 matrices, which should correspond to g, dg, gt, dgt;
             %  (2) 1 16-element complex vector, which is produced by the 'vectorize' method.
+            %  (3) No arguments, i.e. the empty constructor.
             if nargin == 1 && length(varargin{1}) == 16
                 % If we get a 16x1 vector as input, then assume that the vector
                 % was created by the 'vectorize' method, and reverse the procedure
@@ -119,7 +120,7 @@ classdef State
         
         function f = eval_f(self)
             % Return the anomalous Green's function matrix f (change from Riccati parametrization to normal Green's function)
-            f = 2 * (eye(2) - self.g*self.gt ) \ self.g;
+            f = 2 * ( eye(2) - self.g*self.gt ) \ self.g;
         end
         
         function result = eval_ldos(self)

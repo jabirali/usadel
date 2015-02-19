@@ -1,9 +1,10 @@
 % This defines a data structure that describes the physical state of
 % ferromagnetic material with spin-orbit coupling for a given range
-% of positions and energies.
+% of positions and energies. The most demanding calculations are
+% parallellized using SPMD.
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Inspired by a similar program by Sol Jacobsen
+% Inspired by a similar program written by Sol Jacobsen
 % Created 2015-02-16
 % Updated 2015-02-18
 
@@ -17,6 +18,7 @@ classdef Ferromagnet < handle
         energies    = [];                    % Energies of the ferromagnet
         states      = State.empty(0,0);      % Green's functions for each position and energy
 
+        length          = 1;                 % Length of the system
         exchange        = [0,0,0];           % Exchange field
         spinorbit       = SpinVector(0,0,0); % Spin-orbit field
         diffusion       = 1;                 % Diffusion constant
@@ -30,6 +32,9 @@ classdef Ferromagnet < handle
         sim_error_abs = 1e-2;                % Maximum absolute error when simulating
         sim_error_rel = 1e-2;                % Maximum relative error when simulating
         sim_grid_size = 128;                 % Maximum grid size to use in simulations
+        
+        plot  = 1;
+        debug = 1;
     end
     
 
@@ -39,14 +44,24 @@ classdef Ferromagnet < handle
         % Define constructor and accessor methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 
-        function self = Ferromagnet(positions, energies)
+        function self = Ferromagnet(positions, energies, material_length, material_diffusion)
             % Define a constructor which initializes the Ferromagnet
-            % from a vector of positions and a vector of energies
+            % from a vector of positions, a vector of energies (where the
+            % last element is the Debye cutoff), the length of the material
+            % (scales the position vector), and the diffusion constant.
+            
+            % Set default values based on constructor arguments
             self.positions = positions;
             self.energies  = energies;
+            self.diffusion = material_diffusion;
+            self.length    = material_length;
             self.states(length(positions), length(energies)) = 0;
-            
-            % Initialize the internal state to a weak bulk superconductor
+
+            % Set the maximum grid size for numerical calculations to 4x
+            % the number of positions, rounded up to nearest power of two
+            self.sim_grid_size = 2^(3+floor(log2(length(positions)-1)));
+
+            % Initialize the internal state to a bulk superconductor
             self.states(length(positions), length(energies)) = 0;
             for i=1:length(positions)
                 for j=1:length(energies)
@@ -89,55 +104,55 @@ classdef Ferromagnet < handle
             % Set the accuracy of the numerical solution
             options = bvpset('AbsTol',self.sim_error_abs,'RelTol',self.sim_error_rel,'Nmax',self.sim_grid_size);
 
-            % Information about parallel execution
-            task = getCurrentTask();
-            if isempty(task)
-                taskID = 0;
-            else
-                taskID = task.ID;
-            end
-
-            % Start a timer to predict ETA
-            tic;
+            % Partially evaluate the Jacobian and boundary conditions
+            % for the different superconductor energies, and put the
+            % resulting lambda functions in a vector. These functions
+            % are passed on to bvp6c when solving the equations.
+            jc = {};
+            bc = {};
             for m=1:length(self.energies)
-                % Vectorize the current state of the system for the given
-                % energy, and use it as an initial guess for the solution
-                current = zeros(16,length(self.positions));
-                for n=1:length(self.positions)
-                    current(:,n) = self.states(n,m).vectorize;
-                end
-                initial = bvpinit(self.positions', current);
+                jc{m} = @(x,y) self.jacobian(self,x,y,self.energies(m));
+                bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
+            end
                 
-                % Partially evaluate the Jacobian and boundary conditions
-                % for the current energy
-                jc = @(x,y) Ferromagnet.jacobian(self,x,y,self.energies(m));
-                bc = @(a,b) Ferromagnet.boundary(self,a,b,self.energies(m));
-                
-                % Try to solve the differential equation; if the solver
-                % returns an error, don't crash the program, but display a
-                % warning message and continue.
-                try
-                    % Solve the differential equation, and evaluate the
-                    % solution on the position vector of the ferromagnet 
-                    solution = deval(bvp6c(jc,bc,initial,options), self.positions);
+            % Solving the differential equation is slow, and the solutions
+            % at different energies are independent, so we parallelize this
+            spmd
+                for m=drange(1:length(self.energies))
+                    % Progress information
+                    self.print('[ %2.f / %2.f ]   iteration starting...', m, length(self.energies));
 
-                    % Update the current state of the system based on the solution
+                    % Vectorize the current state of the system for the given
+                    % energy, and use it as an initial guess for the solution
+                    current = zeros(16,length(self.positions));
                     for n=1:length(self.positions)
-                        self.states(n,m) = State(solution(:,n));
+                        current(:,n) = self.states(n,m).vectorize;
                     end
-                    
-                catch
-                    % Display a warning message if the computation failed
-                    disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] unable to converge, skipping...', taskID, m, length(self.energies)));
-                   
-                    % TODO: Adaptive grid size?
-                end
+                    initial = bvpinit(self.positions', current);
 
-               % Progress information
-               disp(sprintf('-- Worker %2.0f: [ %2.f / %2.f ] ETA: %2.f min', taskID, m, length(self.energies), toc*(1-m/length(self.energies))/60));
-                
-                % Small time delay to prevent the system from shutting us down
-                pause(0.25);
+                    % Try to solve the differential equation; if the solver
+                    % returns an error, don't crash the program, but display a
+                    % warning message and continue.
+                    try
+                        % Solve the differential equation, and evaluate the
+                        % solution on the position vector of the ferromagnet 
+                        solution = deval(bvp6c(jc{m},bc{m},initial,options), self.positions);
+
+                        % Update the current state of the system based on the solution
+                        for n=1:length(self.positions)
+                            self.states(n,m) = State(solution(:,n));
+                        end
+
+                        % Progress information
+                        self.print('[ %2.f / %2.f ]   iteration complete!', m, length(self.energies));
+
+                    catch
+                        % Display a warning message if the computation failed
+                        self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
+                    end
+                end
+                % Small time delay to prevent the interpreter from getting sluggish
+                pause(0.05);
             end
         end
         
@@ -148,7 +163,75 @@ classdef Ferromagnet < handle
             
             self.state_update;
         end
-    end 
+    
+           
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Define miscellaneous methods for showing the internal state
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function plot_dos(self)
+            % Calculate the density of states
+            dos = zeros(length(self.energies), 1);
+            for m=1:length(self.energies)
+                for n=1:length(self.positions)
+                    dos(m) = dos(m) + self.states(n,m).eval_ldos;
+                end
+            end
+                        
+            % Plot a cubic interpolation of the results
+            energies = linspace(0,self.energies(end), 100);
+            plot(energies, pchip(self.energies, dos, energies));
+            xlabel('Energy');
+            ylabel('Density of States');
+        end
+        
+        function plot_dist(self)
+            % Calculate the singlet and triplet distributions
+            singlet = zeros(length(self.positions), 1);
+            triplet = zeros(length(self.positions), 1);
+            srtc    = zeros(length(self.positions), 1);
+            lrtc    = zeros(length(self.positions), 1);
+            for m=1:length(self.energies)
+                for n=1:length(self.positions)
+                    singlet(n) = singlet(n) + norm(self.states(n,m).singlet);
+                    triplet(n) = triplet(n) + norm(self.states(n,m).triplet);
+                    srtc(n) = srtc(n) + norm(self.states(n,m).srtc(self.exchange));
+                    lrtc(n) = lrtc(n) + norm(self.states(n,m).lrtc(self.exchange));
+                end
+            end
+                        
+            % Plot cubic interpolations of the results
+            positions = linspace(0, self.positions(end), 100);
+            if norm(self.exchange) == 0
+                % If there is no exchange field, don't distinguish SRT/LRT
+                plot(positions, pchip(self.positions, singlet, positions),  ...
+                     positions, pchip(self.positions, triplet, positions));
+                legend('Singlet', 'Triplet');
+            else
+                % If there is an exchange field, distinguish SRT/LRT
+                plot(positions, pchip(self.positions, singlet, positions),  ...
+                     positions, pchip(self.positions, srtc,    positions),  ...
+                     positions, pchip(self.positions, lrtc,    positions));
+                legend('Singlet', 'Short-Range Triplet', 'Long-Range Triplet');
+            end
+            xlabel('Relative position');
+            ylabel('Distribution');
+        end
+ 
+    
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Define miscellaneous methods for use when debugging
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+
+        function print(self,varargin)
+            % This function is used to print progress information if the
+            % 'debug' flag is set to 'true'.
+            
+            if self.debug
+                fprintf(':: Ferromagnet:    %s\n', sprintf(varargin{:}));
+            end
+        end
+    end
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,12 +246,13 @@ classdef Ferromagnet < handle
             
             % Instantiate a 'State' object based on the state vector
             state = State(y);
-            
-            % Extract diffusion constant and background fields
-            diffusion = self.diffusion;
-            exchange  = self.exchange;
-            spinorbit = self.spinorbit;
-            
+                        
+            % Introduce some short notations
+            h = self.exchange;
+            A = self.spinorbit;
+            L = self.length;
+            D = self.diffusion;
+
             % Extract the Riccati parameters and their derivatives
             g   = state.g;
             dg  = state.dg;
@@ -181,27 +265,27 @@ classdef Ferromagnet < handle
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the ferromagnet
-            d2g  =  - 2*dg*Nt*gt*dg                                                             ...
-                    - 2i*((energy+0.001i)/diffusion)*g                                                   ...
-                    - i*(exchange/diffusion)*(SpinVector.Pauli*g - g*conj(SpinVector.Pauli))    ...
-                    + 2i*(spinorbit.z + g*conj(spinorbit.z)*gt)*N*dg                            ...
-                    + 2i*dg*Nt*(conj(spinorbit.z) + gt*spinorbit.z*g)                           ...
-                    + 2*(spinorbit*g + g*conj(spinorbit))*Nt*(conj(spinorbit) + gt*spinorbit*g) ...
-                    + (spinorbit^2*g - g*conj(spinorbit)^2);
+            d2g  =  - 2*dg*Nt*gt*dg                                                       ...
+                    - (2i*L^2/D) * (energy+0.001i) * g                                    ...
+                    - (1i*L^2/D) * h * (SpinVector.Pauli*g - g*conj(SpinVector.Pauli))    ...
+                    + (2i*L/D)   * (A.z + g*conj(A.z)*gt)*N*dg                            ...
+                    + (2i*L/D)   * dg*Nt*(conj(A.z) + gt*A.z*g)                           ...
+                    + (2*L^2/D)  * (A*g + g*conj(A))*Nt*(conj(A) + gt*A*g)                ...
+                    + (L^2/D)    * (A^2*g - g*conj(A)^2);
             
-            d2gt =  - 2*dgt*N*g*dgt                                                             ...
-                    - 2i*((energy+0.001i)/diffusion)*gt                                                  ...
-                    + i*(exchange/diffusion)*(conj(SpinVector.Pauli)*gt - gt*SpinVector.Pauli)  ...
-                    - 2i*(conj(spinorbit.z) + gt*spinorbit.z*g)*Nt*dgt                          ...
-                    - 2i*dgt*N*(spinorbit.z + g*conj(spinorbit.z)*gt)                           ...
-                    + 2*(conj(spinorbit)*gt + gt*spinorbit)*N*(spinorbit + g*conj(spinorbit)*gt)...
-                    + (conj(spinorbit)^2*gt - gt*spinorbit^2);
+            d2gt =  - 2*dgt*N*g*dgt                                                       ...
+                    - (2i*L^2/D) * (energy-0.001i) * gt                                   ...
+                    + (1i*L^2/D) * h * (conj(SpinVector.Pauli)*gt - gt*SpinVector.Pauli)  ...
+                    - (2i*L/D)   * (conj(A.z) + gt*A.z*g)*Nt*dgt                          ...
+                    - (2i*L/D)   * dgt*N*(A.z + g*conj(A.z)*gt)                           ...
+                    + (2*L^2/D)  * (conj(A)*gt + gt*A)*N*(A + g*conj(A)*gt)               ...
+                    + (L^2/D)    * (conj(A)^2*gt - gt*A^2);
             
             % Fill the results of the calculations back into a 'State' object
-            state.g   = dg   + 0.0001i;
-            state.dg  = d2g  + 0.0001i;
-            state.gt  = dgt  - 0.0001i;
-            state.dgt = d2gt - 0.0001i;
+            state.g   = dg;
+            state.dg  = d2g;
+            state.gt  = dgt;
+            state.dgt = d2gt;
             
             % Pack the results into a state vector
             dydx = state.vectorize;
@@ -224,6 +308,9 @@ classdef Ferromagnet < handle
             
             % State in the material to the right of the ferromagnet
             s3   = State(self.boundary_right(self.energy_index(energy)));
+            
+            % The length of the system
+            L = self.length;
              
             % Calculate the normalization matrices
             N0  = inv( eye(2) - s0.g*s0.gt );
@@ -237,22 +324,18 @@ classdef Ferromagnet < handle
 
             N3  = inv( eye(2) - s3.g*s3.gt );
             Nt3 = inv( eye(2) - s3.gt*s3.g );
-            
-            % Calculate interface parameters in the Kuprianov-Lukichev B.C.
-            param_left  = abs(self.positions(end) - self.positions(1)) * self.interface_left;
-            param_right = abs(self.positions(end) - self.positions(1)) * self.interface_right;
-            
+                        
             % Calculate the deviation from the Kuprianov--Lukichev boundary
             % conditions, and store the results back into State instances
-            s1.dg  = s1.dg  - ( eye(2) - s1.g*s0.gt )*N0*(  s1.g  - s0.g  )/param_left  ...
-                   - 1i * (self.spinorbit.z * s1.g + s1.g * conj(self.spinorbit.z));
-            s1.dgt = s1.dgt - ( eye(2) - s1.gt*s0.g )*Nt0*( s1.gt - s0.gt )/param_left  ...
-                   + 1i * (conj(self.spinorbit.z) * s1.gt + s1.gt * self.spinorbit.z);
+            s1.dg  = s1.dg  - ( eye(2) - s1.g*s0.gt )*N0*(  s1.g  - s0.g  )/self.interface_left  ...
+                   - (1i*L) * (self.spinorbit.z * s1.g + s1.g * conj(self.spinorbit.z));
+            s1.dgt = s1.dgt - ( eye(2) - s1.gt*s0.g )*Nt0*( s1.gt - s0.gt )/self.interface_left  ...
+                   + (1i*L) * (conj(self.spinorbit.z) * s1.gt + s1.gt * self.spinorbit.z);
             
-            s2.dg  = s2.dg  - ( eye(2) - s2.g*s3.gt )*N3*(  s2.g  - s3.g  )/param_right ...
-                   - 1i * (self.spinorbit.z * s2.g + s2.g * conj(self.spinorbit.z));
-            s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s2.gt - s3.gt )/param_right ...
-                   + 1i * (conj(self.spinorbit.z) * s2.gt + s2.gt * self.spinorbit.z);
+            s2.dg  = s2.dg  - ( eye(2) - s2.g*s3.gt )*N3*(  s2.g  - s3.g  )/self.interface_right ...
+                   - (1i*L) * (self.spinorbit.z * s2.g + s2.g * conj(self.spinorbit.z));
+            s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s2.gt - s3.gt )/self.interface_right ...
+                   + (1i*L) * (conj(self.spinorbit.z) * s2.gt + s2.gt * self.spinorbit.z);
 
             % Vectorize the results of the calculations, and return it            
             residue = [s1.vectorize_dg s1.vectorize_dgt s2.vectorize_dg s2.vectorize_dgt]';

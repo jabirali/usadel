@@ -16,33 +16,15 @@ function bilayer_simulate()
         s.boundary_right(:) = f.states(1,  :);
         f.boundary_left(:)  = s.states(end,:);
         
-        % Update the system using two parallel workers
-        spmd
-            switch labindex
-                case 1
-                    s = update_superconductor(s);
-                case 2
-                    f = update_ferromagnet(f):
-            end
-        end
+        % Update the system
+        s.update;
+        f.update;
         
-        % TODO: Plot current singlet/triplet distribution in entire system
-       
-        % Save the current temperature and gap to the output vectors
+        % Save the current gap and temperature
         temperatures(end+1) = s.temperature;
         gaps(end+1)         = mean(abs(s.gap));
         
         % Increase the temperature of the system
         s.temperature = s.temperature + 0.1;
     end
-end
-
-function s = update_superconductor(input)
-    s = input;
-    s.update;
-end
-
-function f = update_ferromagnet(input)
-    f = input;
-    f.update;
 end
