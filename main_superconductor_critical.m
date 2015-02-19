@@ -5,14 +5,9 @@ function [gaps,temperatures] = main_superconductor_critical()
     
     % Create a superconductor with N₀λ = 0.2, T=0
     s = Superconductor( linspace(0,1,pos_len), [linspace(0,1.5,erg_len) linspace(1.6,cutoff,erg_len)], 300, 1, 0.2 );
-    s.scaling = 0.2;
-    s.temperature = 1e-16;
     
     % Bootstrap the state by solving the equations self-consistently at T=0
-    for n=1:3
-        fprintf(':: Initializing the superconductor at absolute zero... [ iteration %.f ]\n', n);
-        s.update;
-    end
+    s.update;
     
     % Save the T=0 results to the output vector
     temperatures = [0];
