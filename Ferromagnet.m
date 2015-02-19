@@ -34,7 +34,8 @@ classdef Ferromagnet < handle
         sim_grid_size = 128;                 % Maximum grid size to use in simulations
         
         debug         = true;                % Whether to show intermediate results or not
-        plot          = true;                % Whether to plot inter
+        plot          = true;                % Whether to plot intermediate results or not
+        delay         = 5;                   % How long to wait between program iterations
     end
     
 
@@ -150,9 +151,11 @@ classdef Ferromagnet < handle
                         % Display a warning message if the computation failed
                         self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
                     end
+                    
+                % Small time delay to prevent the interpreter from getting
+                % sluggish or killed by the system
+                pause(self.delay);
                 end
-                % Small time delay to prevent the interpreter from getting sluggish
-                pause(0.05);
             end
         end
         
@@ -160,8 +163,14 @@ classdef Ferromagnet < handle
             % This function updates the internal state of the ferromagnet
             % by calling the 'update_*' methods. Always run this after
             % changing the boundary conditions or parameters of the system.
-            
+
+            % Update the state of the system
             self.state_update;
+            
+            % Plot the current DOS
+            if self.plot
+                self.plot_dos;
+            end
         end
     
            
@@ -308,10 +317,7 @@ classdef Ferromagnet < handle
             
             % State in the material to the right of the ferromagnet
             s3   = State(self.boundary_right(self.energy_index(energy)));
-            
-            % The length of the system
-            L = self.length;
-             
+                         
             % Calculate the normalization matrices
             N0  = inv( eye(2) - s0.g*s0.gt );
             Nt0 = inv( eye(2) - s0.gt*s0.g );
@@ -328,14 +334,14 @@ classdef Ferromagnet < handle
             % Calculate the deviation from the Kuprianov--Lukichev boundary
             % conditions, and store the results back into State instances
             s1.dg  = s1.dg  - ( eye(2) - s1.g*s0.gt )*N0*(  s1.g  - s0.g  )/self.interface_left  ...
-                   - (1i*L) * (self.spinorbit.z * s1.g + s1.g * conj(self.spinorbit.z));
+                   - (1i*self.length) * (self.spinorbit.z * s1.g + s1.g * conj(self.spinorbit.z));
             s1.dgt = s1.dgt - ( eye(2) - s1.gt*s0.g )*Nt0*( s1.gt - s0.gt )/self.interface_left  ...
-                   + (1i*L) * (conj(self.spinorbit.z) * s1.gt + s1.gt * self.spinorbit.z);
+                   + (1i*self.length) * (conj(self.spinorbit.z) * s1.gt + s1.gt * self.spinorbit.z);
             
             s2.dg  = s2.dg  - ( eye(2) - s2.g*s3.gt )*N3*(  s2.g  - s3.g  )/self.interface_right ...
-                   - (1i*L) * (self.spinorbit.z * s2.g + s2.g * conj(self.spinorbit.z));
+                   - (1i*self.length) * (self.spinorbit.z * s2.g + s2.g * conj(self.spinorbit.z));
             s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s2.gt - s3.gt )/self.interface_right ...
-                   + (1i*L) * (conj(self.spinorbit.z) * s2.gt + s2.gt * self.spinorbit.z);
+                   + (1i*self.length) * (conj(self.spinorbit.z) * s2.gt + s2.gt * self.spinorbit.z);
 
             % Vectorize the results of the calculations, and return it            
             residue = [s1.vectorize_dg s1.vectorize_dgt s2.vectorize_dg s2.vectorize_dgt]';

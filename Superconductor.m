@@ -35,6 +35,7 @@ classdef Superconductor < handle
 
         debug         = true;                % Whether to show intermediate results or not
         plot          = true;                % Whether to plot intermediate results or not
+        delay         = 5;                   % How long to wait between program iterations
     end
     
 
@@ -179,10 +180,11 @@ classdef Superconductor < handle
                         % Display a warning message if the computation failed
                         self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
                     end
+                    
+                % Small time delay to prevent the interpreter from getting
+                % sluggish or killed by the system
+                pause(self.delay);
                 end
-                
-                % Small time delay to prevent the interpreter from getting sluggish
-                pause(0.05);
             end
         end
         
@@ -396,8 +398,7 @@ classdef Superconductor < handle
                 plot(energies, kernel(energies));
                 title('Integrand used in the gap equation');
                 xlabel('Energy');
-                ylabel('Re{f(E)} tanh(E/2T)');
-                pause(0.05);
+                ylabel('Re[f(E)] tanh(E/2T)');
             end
 
             % Perform a numerical integration of the interpolation up to
