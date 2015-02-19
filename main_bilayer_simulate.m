@@ -1,4 +1,4 @@
-function simulate_bilayer_bulk()
+function main_bilayer_simulate()
     % Log output to a file
     mkdir output
     diary output/simulation.log

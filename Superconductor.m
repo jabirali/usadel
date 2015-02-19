@@ -35,7 +35,7 @@ classdef Superconductor < handle
 
         debug         = true;                % Whether to show intermediate results or not
         plot          = true;                % Whether to plot intermediate results or not
-end
+    end
     
 
     
@@ -59,8 +59,8 @@ end
             self.strength  = material_strength;
             
             % Use eq. (3.34) in Tinkham to estimate the zero-temperature gap
-            self.gap       = abs(energies(end))/sinh(inv(material_strength)) ...
-                           * ones(size(positions));
+            self.gap = abs(energies(end))/sinh(inv(material_strength)) ...
+                     * ones(size(positions));
             
             % Set the maximum grid size for numerical calculations to 4x
             % the number of positions, rounded up to nearest power of two

@@ -1,4 +1,4 @@
-function [gaps,temperatures] = superconductor_critical()
+function [gaps,temperatures] = main_superconductor_critical()
     pos_len = 8;
     erg_len = 8;
     cutoff = 20;

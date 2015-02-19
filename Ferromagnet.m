@@ -6,7 +6,7 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Inspired by a similar program written by Sol Jacobsen
 % Created 2015-02-16
-% Updated 2015-02-18
+% Updated 2015-02-19
 
 classdef Ferromagnet < handle
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,8 +14,8 @@ classdef Ferromagnet < handle
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     properties (GetAccess=public, SetAccess=public)
         % Properties that determine the physical characteristics of the system
-        positions   = [];                    % Positions in the ferromagnet
-        energies    = [];                    % Energies of the ferromagnet
+        positions   = [];                    % Positions in the ferromagnet (relative to the material length)
+        energies    = [];                    % Energies of the ferromagnet (relative to the Thouless energy)
         states      = State.empty(0,0);      % Green's functions for each position and energy
 
         length          = 1;                 % Length of the system
@@ -33,8 +33,8 @@ classdef Ferromagnet < handle
         sim_error_rel = 1e-2;                % Maximum relative error when simulating
         sim_grid_size = 128;                 % Maximum grid size to use in simulations
         
-        plot  = 1;
-        debug = 1;
+        debug         = true;                % Whether to show intermediate results or not
+        plot          = true;                % Whether to plot inter
     end
     
 
