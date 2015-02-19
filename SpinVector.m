@@ -24,26 +24,29 @@ classdef SpinVector
     methods
         function self = SpinVector(Ax, Ay, Az)
             % Constructs a spin vector from three spin matrices Ax, Ay, Az
+            self.x = Ax;
+            self.y = Ay;
+            self.z = Az;
             
             % If the arguments are scalars, multiply by identity matrices;
             % If not, just use the input arguments as the components of A.
-            if isscalar(Ax)
-                self.x = Ax .* eye(2);
-            else
-                self.x = Ax;
-            end
-            
-            if isscalar(Ay)
-                self.y = Ay .* eye(2);
-            else
-                self.y = Ay;
-            end
-            
-            if isscalar(Az)
-                self.z = Az .* eye(2);
-            else
-                self.z = Az;
-            end
+            % if isscalar(Ax)
+            %     self.x = Ax .* eye(2);
+            % else
+            %     self.x = Ax;
+            % end
+            % 
+            % if isscalar(Ay)
+            %     self.y = Ay .* eye(2);
+            % else
+            %     self.y = Ay;
+            % end
+            % 
+            % if isscalar(Az)
+            %     self.z = Az .* eye(2);
+            % else
+            %     self.z = Az;
+            % end
         end
         
         
@@ -62,111 +65,132 @@ classdef SpinVector
         
         
         % Overloading of unary operators and functions
-        function result = conj(self)
+        function self = conj(self)
             % This overloads the complex conjugation function
-            result = SpinVector(conj(self.x), conj(self.y), conj(self.z));
+            self.x = conj(self.x);
+            self.y = conj(self.y);
+            self.z = conj(self.z);
         end
         
-        function result = transpose(self)
+        function self = transpose(self)
             % This overloads the matrix transposition function
-            result = SpinVector(self.x.', self.y.', self.z.');
+            self.x = self.x.';
+            self.y = self.y.';
+            self.z = self.z.';
         end
         
-        function result = ctranspose(self)
+        function self = ctranspose(self)
             % This overloads the complex transposition function
-            result = SpinVector(self.x', self.y', self.z');
+            self.x = self.x';
+            self.y = self.y';
+            self.z = self.z';
         end
         
-        function result = uplus(self)
+        function self = uplus(self)
             % This overloads the unary plus operator
-            result = self;
         end
         
-        function result = uminus(self)
+        function self = uminus(self)
             % This overloads the unary minus operator
-            result = SpinVector(-self.x,-self.y,-self.z);
+            self.x = -self.x;
+            self.y = -self.y;
+            self.z = -self.z;
         end
 
         
         
         % Overloading of binary operators
-        function result = plus(lhs, rhs)
+        function lhs = plus(lhs, rhs)
             % This overloads the plus operator for spin vectors
-            if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
-                result = SpinVector(lhs.x+rhs.x, lhs.y+rhs.y, lhs.z+rhs.z);
-            else
-                error('SpinVector.plus: You can only add a spin vector to another spin vector.');
-            end
+            lhs.x = lhs.x+rhs.x;
+            lhs.y = lhs.y+rhs.y;
+            lhs.z = lhs.z+rhs.z;
+            
+            % if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
+            %     result = SpinVector(lhs.x+rhs.x, lhs.y+rhs.y, lhs.z+rhs.z);
+            % else
+            %     error('SpinVector.plus: You can only add a spin vector to another spin vector.');
+            % end
         end
         
-        function result = minus(lhs, rhs)
+        function lhs = minus(lhs, rhs)
             % This overloads the plus operator for spin vectors
-            if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
-                result = SpinVector(lhs.x-rhs.x, lhs.y-rhs.y, lhs.z-rhs.z);
-            else
-                error('SpinVector.minus: You can only subtract spin vectors from each other.');
-            end
+            lhs.x = lhs.x-rhs.x;
+            lhs.y = lhs.y-rhs.y;
+            lhs.z = lhs.z-rhs.z;
+            
+            % if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
+            %     result = SpinVector(lhs.x-rhs.x, lhs.y-rhs.y, lhs.z-rhs.z);
+            % else
+            %     error('SpinVector.minus: You can only subtract spin vectors from each other.');
+            % end
         end
         
-        function result = times(lhs, rhs)
+        function lhs = times(lhs, rhs)
             % This overloads the arraywise multiplication operator for spin vectors
-            if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
-                result = SpinVector(lhs.x*rhs.x,lhs.y*rhs.y,lhs.z*rhs.z);
-            else
-                error('SpinVector.times: You can only arraywise multiply two spin vectors.');
-            end
+            lhs.x = lhs.x*rhs.x;
+            lhs.y = lhs.y*rhs.y;
+            lhs.z = lhs.z*rhs.z;
+
+            % if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
+            %     result = SpinVector(lhs.x*rhs.x,lhs.y*rhs.y,lhs.z*rhs.z);
+            % else
+            %     error('SpinVector.times: You can only arraywise multiply two spin vectors.');
+            % end
         end
         
         function result = mtimes(lhs, rhs)
             % This overloads the matrix multiplication operator for spin vectors
-            if isa(lhs, 'SpinVector')
+
+            if isobject(lhs)
                 % Left-hand side is a spin vector
-                if isa(rhs, 'SpinVector')
-                    % Right-hand side is also a spin vector
+                if isobject(rhs)
+                    % Right-hand side is a spin vector
                     result = lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z;
-                elseif isscalar(rhs)
-                    % Right-hand side is a scalar
-                    result = SpinVector(lhs.x*rhs, lhs.y*rhs, lhs.z*rhs);
-                elseif isvector(rhs)
+                elseif length(rhs) == 3
                     % Right-hand side is a vector
                     result = lhs.x*rhs(1) + lhs.y*rhs(2) + lhs.z*rhs(3);
-                elseif ismatrix(rhs)
-                    % Right-hand side is a matrix
-                    result = SpinVector(lhs.x*rhs, lhs.y*rhs, lhs.z*rhs);
                 else
-                    error('SpinVector.mtimes: Right-hand argument has to be a spin vector, matrix, vector, or scalar.');
+                    % Right-hand side is a matrix or scalar
+                    lhs.x = lhs.x*rhs;
+                    lhs.y = lhs.y*rhs;
+                    lhs.z = lhs.z*rhs;
+                    result = lhs;
                 end
             else
-                % Right-hand side is a spin vector
-                if isscalar(lhs)
-                    % Left-hand side is a scalar
-                    result = SpinVector(rhs.x*lhs, rhs.y*lhs, rhs.z*lhs);
-                elseif isvector(lhs)
+                % Right-hand side is a spin vector, left-hand side is not
+                if length(lhs) == 3
                     % Left-hand side is a vector
                     result = rhs.x*lhs(1) + rhs.y*lhs(2) + rhs.z*lhs(3);
-                elseif ismatrix(lhs)
-                    % Left-hand side is a matrix
-                    result = SpinVector(rhs.x*lhs, rhs.y*lhs, rhs.z*lhs);
                 else
-                    error('SpinVector.mtimes: Left-hand argument has to be a spin vector, matrix, vector, or scalar.');
+                    % Left-hand side is a matrix or scalar
+                    rhs.x = rhs.x*lhs;
+                    rhs.y = rhs.y*lhs;
+                    rhs.z = rhs.z*lhs;
+                    result = rhs;
                 end
             end
         end
         
         function result = mpower(lhs,rhs)
-            % This overloads the matrix power operator
-            if rhs ~= 2
-                error('SpinVector.mpower: The matrix power of a spin vector has only been defined for an exponent of two.');
-            end
+            % This overloads the matrix power operator. Note that the
+            % current definition is only valid for even exponents!
             
-            result = lhs.x^2 + lhs.y^2 + lhs.z^2;
+            % if rhs ~= 2
+            %     error('SpinVector.mpower: The matrix power of a spin vector has only been defined for an exponent of two.');
+            % end
+            
+            result = (lhs.x^2 + lhs.y^2 + lhs.z^2)^(rhs/2);
         end
         
-        function result = mrdivide(lhs,rhs)
+        function lhs = mrdivide(lhs,rhs)
             % This overloads the matrix division operator            
-            result = SpinVector(lhs.x/rhs, lhs.y/rhs, lhs.z/rhs);
+            lhs.x = lhs.x/rhs;
+            lhs.y = lhs.y/rhs;
+            lhs.z = lhs.z/rhs;
         end
     end
+    
    
     
     
