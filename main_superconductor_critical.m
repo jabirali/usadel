@@ -4,7 +4,7 @@ function [gaps,temperatures] = main_superconductor_critical()
     cutoff = 20;
     
     % Create a superconductor with N₀λ = 0.2, T=0
-    s = Superconductor( linspace(0,1,pos_len), [linspace(0,1.5,erg_len) linspace(1.6,cutoff,erg_len)] );
+    s = Superconductor( linspace(0,1,pos_len), [linspace(0,1.5,erg_len) linspace(1.6,cutoff,erg_len)], 300, 1, 0.2 );
     s.scaling = 0.2;
     s.temperature = 1e-16;
     
