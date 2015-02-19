@@ -100,7 +100,7 @@ classdef Superconductor < handle
             % This function returns whether or not the system is above
             % critical temperature, i.e. if the superconducting gap is zero
             % everywhere in the superconductor.
-            result = ( max(abs(self.gap)) < 1e-4 );
+            result = ( max(abs(self.gap)) < 1e-8 );
         end
         
         function result = gap_lookup(self, x)
