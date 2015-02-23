@@ -56,14 +56,14 @@ classdef Ferromagnet < handle
             self.energies  = energies;
             self.diffusion = material_diffusion;
             self.length    = material_length;
-            self.states(length(positions), length(energies)) = 0;
+            self.states(length(positions), length(energies)) = State;
 
             % Set the maximum grid size for numerical calculations to 4x
             % the number of positions, rounded up to nearest power of two
             self.sim_grid_size = 2^(3+floor(log2(length(positions)-1)));
 
             % Initialize the internal state to a bulk superconductor
-            self.states(length(positions), length(energies)) = 0;
+            self.states(length(positions), length(energies)) = State;
             for i=1:length(positions)
                 for j=1:length(energies)
                     self.states(i,j) = Superconductor.Bulk(energies(j), 1);
@@ -71,8 +71,8 @@ classdef Ferromagnet < handle
             end
             
             % Set the boundary conditions to empty states by default
-            self.boundary_left(length(energies))  = 0;
-            self.boundary_right(length(energies)) = 0;    
+            self.boundary_left(length(energies))  = State;
+            self.boundary_right(length(energies)) = State;    
         end
         
         function index = position_index(self, position)
@@ -149,7 +149,7 @@ classdef Ferromagnet < handle
 
                     %catch
                         % Display a warning message if the computation failed
-                        self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
+                       % self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
                     %end
                     
                 % Small time delay to prevent the interpreter from getting
@@ -271,9 +271,41 @@ classdef Ferromagnet < handle
             % Calculate the normalization matrices
             N  = inv( eye(2) - g*gt );
             Nt = inv( eye(2) - gt*g );
-            
+                        
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the ferromagnet
+            
+            %%%%%%%%%%%%% WORK IN PROGRESS %%%%%%%%%%%%%%%%%%%%%
+            % TODO:
+            % 1) Switch to measuring everything relative to the
+            %    zero-temperature superconducting gap
+            % 2) Recalculate the coefficients in the Usadel eq every time
+            %    we call Ferromagnet.update, before running state_update
+            % 3) Since bvp6c can provide extra parameters to this function,
+            %    provide the Usadel coefficient array that way!
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                 
+
+             c = {};
+            
+             c(1,1) = -2;
+             c(1,2) = -2i/Eth;
+             c(1,3) = (-1i/Eth) * self.exchange * SpinVector.Pauli;
+             c(1,4) = (2i/(L*Eth)) * self.spinorbit.z;
+             c(1,5) = sqrt(2/Eth)  * self.spinorbit;
+             c(1,6) = self.spinorbit^2/Eth;
+             
+             c(2,:) = conj(c(1,:));
+
+             d2g  =  c(1,1) * dg*Nt*gt*dg                                             ...
+                  +  c(1,2) * (energy+0.001i)*g                                       ...
+                  +  c(1,3) * g - g * c(2,3)                                          ...
+                  + (c(1,4)-g*c(2,4)*gt)*N*dg - dg*Nt*(c(2,4)-gt*c(1,4)*g)            ...
+                  + (c(1,5) * g + g * c(2,5)) * Nt * (c(2,5) + gt*c(1,5)*g)           ...
+                  +  c(1,6) * g - g * c(2,6);
+              
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             d2g  =  - 2*dg*Nt*gt*dg                                                         ...
                     - (2i*L^2/D) * (energy+0.001i) * g                                      ...
                     - (1i*L^2/D) * ((h*SpinVector.Pauli)*g - g*(h*conj(SpinVector.Pauli)))  ...
@@ -307,7 +339,7 @@ classdef Ferromagnet < handle
             % conditions for the system. 
 
             % State in the material to the left of the ferromagnet
-            s0   = State(self.boundary_left(self.energy_index(energy)));
+            s0   = self.boundary_left(self.energy_index(energy));
             
             % State at the left end of the ferromagnet
             s1   = State(y1);
@@ -316,7 +348,7 @@ classdef Ferromagnet < handle
             s2   = State(y2);
             
             % State in the material to the right of the ferromagnet
-            s3   = State(self.boundary_right(self.energy_index(energy)));
+            s3   = self.boundary_right(self.energy_index(energy));
                          
             % Calculate the normalization matrices
             N0  = inv( eye(2) - s0.g*s0.gt );

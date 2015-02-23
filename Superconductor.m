@@ -15,7 +15,7 @@ classdef Superconductor < handle
         % Properties that determine the physical characteristics of the system
         positions   = [];                    % Positions in the superconductor (relative to the material length)
         energies    = [];                    % Energies of the superconductor (relative to the Thouless energy)
-        gap         = [];                    % Superconducting gap at each position
+        gap         = 0;                     % Superconducting gap at each position
         states      = State.empty(0,0);      % Riccati parameters and their derivatives for each position and energy
 
         length          = 1;                 % Length of the system
@@ -60,15 +60,14 @@ classdef Superconductor < handle
             self.strength  = material_strength;
             
             % Use eq. (3.34) in Tinkham to estimate the zero-temperature gap
-            self.gap = abs(energies(end))/sinh(inv(material_strength)) ...
-                     * ones(size(positions));
+            self.gap = @(x) abs(energies(end))/sinh(inv(material_strength));
             
             % Set the maximum grid size for numerical calculations to 4x
             % the number of positions, rounded up to nearest power of two
             self.sim_grid_size = 2^(3+floor(log2(length(positions)-1)));
             
             % Initialize the internal state to a BCS bulk superconductor
-            self.states(length(positions), length(energies)) = 0;
+            self.states(length(positions), length(energies)) = State;
             for i=1:length(positions)
                 for j=1:length(energies)
                     self.states(i,j) = Superconductor.Bulk(energies(j), self.gap(1));
@@ -76,8 +75,8 @@ classdef Superconductor < handle
             end
             
             % Set the boundary conditions to vacuum states by default
-            self.boundary_left(length(energies))  = 0;
-            self.boundary_right(length(energies)) = 0;            
+            self.boundary_left(length(energies))  = State;
+            self.boundary_right(length(energies)) = State;            
         end
         
         function index = position_index(self, position)
@@ -99,19 +98,9 @@ classdef Superconductor < handle
         function result = critical(self)
             % This function returns whether or not the system is above
             % critical temperature, i.e. if the superconducting gap is zero
-            % everywhere in the superconductor.
-            result = ( max(abs(self.gap)) < 1e-8 );
-        end
-        
-        function result = gap_lookup(self, x)
-            % This function performs a nearest-neighbor interpolation of
-            % the superconducting gap as a function of position, and
-            % returns the value in a given point.
-            
-            result = interp1(self.positions, self.gap, x, 'nearest', 'extrap');
-            % TODO: Polynomial fit
-        end
-        
+            % in the middle of the superconductor
+            result = ( abs(self.gap(1/2)) < 1e-8 );
+        end        
         
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,9 +111,14 @@ classdef Superconductor < handle
             % This function updates the vector containing the current
             % estimate of the superconducting gap at equilibrium.
             
+            % Update the gap vector
+            gaps = [];
             for n=1:length(self.positions)
-                self.gap(n) = self.gap_calculate(self, self.positions(n));
+                gaps(n) = self.gap_calculate(self, self.positions(n));
             end
+            
+            % Create a piecewise cubic interpolation
+            self.gap = griddedInterpolant(self.positions, gaps, 'pchip');
         end
         
         function state_update(self)
@@ -148,7 +142,7 @@ classdef Superconductor < handle
                 
             % Solving the differential equation is slow, and the solutions
             % at different energies are independent, so we parallelize this
-            spmd
+            %spmd
                 for m=drange(1:length(self.energies))
                     % Progress information
                     self.print('[ %2.f / %2.f ]   iteration starting...', m, length(self.energies));
@@ -164,7 +158,7 @@ classdef Superconductor < handle
                     % Try to solve the differential equation; if the solver
                     % returns an error, don't crash the program, but display a
                     % warning message and continue.
-                    try
+                    
                         % Solve the differential equation, and evaluate the
                         % solution on the position vector of the superconductor 
                         solution = deval(bvp6c(jc{m},bc{m},initial,options), self.positions);
@@ -176,16 +170,16 @@ classdef Superconductor < handle
                                     
                         % Progress information
                         self.print('[ %2.f / %2.f ]   iteration complete!', m, length(self.energies));
-
-                    catch
-                        % Display a warning message if the computation failed
-                        self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
-                    end
+% 
+%                     catch
+%                         % Display a warning message if the computation failed
+%                         self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
+%                     end
                     
                 % Small time delay to prevent the interpreter from getting
                 % sluggish or killed by the system
                 pause(self.delay);
-                end
+                %end
             end
         end
         
@@ -195,29 +189,13 @@ classdef Superconductor < handle
             % then 'gap_update'. Always run this after changing the
             % boundary conditions or temperature of the system.
             
-            % Update the state and gap estimates for the system
-            gap_prev = mean(abs(self.gap));
+            % Update the state
             self.state_update;
             self.gap_update;
-            gap_curr = mean(abs(self.gap));
-            
-            % If the relative change in gap was larger than 1%,
-            % keep updating the estimate until we arrive at a
-            % self-consistent solution of the problem
-            while ~self.critical && (abs(1-gap_curr/gap_prev) > 1e-2) 
-                % Status information
-                self.print('Gap estimate changed by %2.f%%, recalculating...', 100*abs(gap_curr/gap_prev));
-
-                % Update the estimate
-                gap_prev = gap_curr;
-                self.state_update;
-                self.gap_update;
-                gap_curr = mean(abs(self.gap));
                 
-                % Plot the current DOS
-                if self.plot
-                    self.plot_dos;
-                end
+            % Plot the current DOS
+            if self.plot
+                self.plot_dos;
             end
         end
         
@@ -303,7 +281,7 @@ classdef Superconductor < handle
             state = State(y);
             
             % Extract the superconducting gap
-            gap = self.gap_lookup(x);
+            gap = self.gap(x);
             
             % Calculate the Thouless energy
             thouless = self.diffusion/self.length^2;
@@ -320,12 +298,12 @@ classdef Superconductor < handle
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the superconductor
-            d2g  =  - 2*dg*Nt*gt*dg ...
-                    - 2i*((energy+0.001i)/thouless)*g   ...
+            d2g  =  - 2*dg*Nt*gt*dg                                     ...
+                    - 2i*((energy+0.001i)/thouless)*g                   ...
                     - (gap/thouless)*(SpinVector.Pauli.y - g * SpinVector.Pauli.y * g);
             
-            d2gt =  - 2*dgt*N*g*dgt  ...
-                    - 2i*((energy-0.001i)/thouless)*gt   ...
+            d2gt =  - 2*dgt*N*g*dgt                                     ...
+                    - 2i*((energy-0.001i)/thouless)*gt                  ...
                     + (gap/thouless)*(SpinVector.Pauli.y - gt * SpinVector.Pauli.y * gt);
             
             % Fill the results of the calculations back into a 'State' object
@@ -345,7 +323,7 @@ classdef Superconductor < handle
             % conditions for the system. 
             
             % State in the material to the left of the superconductor
-            s0   = State(self.boundary_left(self.energy_index(energy)));
+            s0   = self.boundary_left(self.energy_index(energy));
             
             % State at the left end of the superconductor
             s1   = State(y1);
@@ -354,7 +332,7 @@ classdef Superconductor < handle
             s2   = State(y2);
             
             % State in the material to the right of the superconductor
-            s3   = State(self.boundary_right(self.energy_index(energy)));
+            s3   = self.boundary_right(self.energy_index(energy));
              
             % Calculate the normalization matrices
             N0  = inv( eye(2) - s0.g*s0.gt );

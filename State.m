@@ -32,44 +32,32 @@ classdef State
     methods
         function self = State(varargin)
             % This is the default constructor, which takes as its input either:
-            %  (1) 4 2x2 matrices, which should correspond to g, dg, gt, dgt;
-            %  (2) 1 16-element complex vector, which is produced by the 'vectorize' method.
-            %  (3) No arguments, i.e. the empty constructor.
-            if nargin == 1 && length(varargin{1}) == 16
-                % If we get a 16x1 vector as input, then assume that the vector
-                % was created by the 'vectorize' method, and reverse the procedure
-                args     = reshape(varargin{1}, 2, 8);
-                self.g   = args(:,1:2);
-                self.dg  = args(:,3:4);
-                self.gt  = args(:,5:6);
-                self.dgt = args(:,7:8);
-            elseif nargin == 4
-                % If we get 4 arguments as input, then assume that these
-                % arguments are either scalars and matrices, and correspond
-                % to the internal variables g, dg, gt, and dgt, in that order.
-                if isscalar(varargin{1})
-                    self.g = varargin{1} * eye(2);
-                else
-                    self.g = varargin{1};
-                end
-                
-                if isscalar(varargin{2})
-                    self.dg = varargin{2} * eye(2);
-                else
-                    self.dg = varargin{2};
-                end
-                
-                if isscalar(varargin{3})
-                    self.gt = varargin{3} * eye(2);
-                else
-                    self.gt = varargin{3};
-                end
-                
-                if isscalar(varargin{4})
+            %  (i)   four 2x2 matrices, which should correspond to g, dg, gt, dgt;
+            %  (ii)  one 16-element complex vector, which should be produced by 'vectorize' method;
+            %  (iii) no arguments, i.e. the empty constructor.
+            switch nargin
+                case 1
+                    % If we get one input, then assume that we got a vector
+                    % created by 'vectorize', and reverse the procedure
+                    
+                    args     = reshape(varargin{1}, 2, 8);
+                    self.g   = args(:,1:2);
+                    self.dg  = args(:,3:4);
+                    self.gt  = args(:,5:6);
+                    self.dgt = args(:,7:8);
+                case 4
+                    % If we get four input arguments, then assume that
+                    % these correspond to g, dg, gt, and dgt, respectively.
+                    % Multiply with a 2x2 identity matrix in case the
+                    % input arguments were scalars.
+                    
+                    self.g   = varargin{1} * eye(2);
+                    self.dg  = varargin{2} * eye(2);
+                    self.gt  = varargin{3} * eye(2);
                     self.dgt = varargin{4} * eye(2);
-                else
-                    self.dgt = varargin{4};
-                end
+                otherwise
+                    % In any other case, we assume that we were called as
+                    % an empty constructor, so do nothing to the members.
             end
         end
         
@@ -89,15 +77,16 @@ classdef State
         % Definition of other useful methods
         function result = vectorize(self)
             % Convert the internal data structure to a vector shape
-            result = [self.vectorize_g  self.vectorize_dg ...
-                      self.vectorize_gt self.vectorize_dgt]';
+            result = reshape([self.g self.dg self.gt self.dgt], 1, 16);
+                     %[self.vectorize_g  self.vectorize_dg ...
+                      %self.vectorize_gt self.vectorize_dgt]';
         end
         
         function result = vectorize_g(self)
             % Convert part of the internal data structure to a vector shape
             result = reshape(self.g,  1, 4);
         end
-
+        
         function result = vectorize_dg(self)
             % Convert part of the internal data structure to a vector shape
             result = reshape(self.dg,  1, 4);
@@ -107,7 +96,7 @@ classdef State
             % Convert part of the internal data structure to a vector shape
             result = reshape(self.gt,  1, 4);
         end
-
+        
         function result = vectorize_dgt(self)
             % Convert part of the internal data structure to a vector shape
             result = reshape(self.dgt,  1, 4);

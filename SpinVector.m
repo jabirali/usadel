@@ -23,10 +23,12 @@ classdef SpinVector
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods
         function self = SpinVector(Ax, Ay, Az)
-            % Constructs a spin vector from three spin matrices Ax, Ay, Az
-            self.x = Ax;
-            self.y = Ay;
-            self.z = Az;
+            % Constructs a spin vector from three spin matrices Ax, Ay, Az.
+            % The arguments are multiplied by 2x2 spin matrices in case
+            % scalars are provided instead of matrices.
+            self.x = Ax * eye(2);
+            self.y = Ay * eye(2);
+            self.z = Az * eye(2);
             
             % If the arguments are scalars, multiply by identity matrices;
             % If not, just use the input arguments as the components of A.
@@ -174,7 +176,8 @@ classdef SpinVector
         
         function result = mpower(lhs,rhs)
             % This overloads the matrix power operator. Note that the
-            % current definition is only valid for even exponents!
+            % current definition is optimized for even exponents, and
+            % will not produce correct output for odd powers!
             
             % if rhs ~= 2
             %     error('SpinVector.mpower: The matrix power of a spin vector has only been defined for an exponent of two.');
@@ -220,6 +223,8 @@ classdef SpinVector
         % Output:
         %   A               3x2x2 SU(2) valued vector field that describes the
         %                   Rashba--Dresselhaus spin-orbit coupling above.
+        
+        % TODO: Add another argument to add SOC along z-axis.
 
         % Define the Rashba--Dresselhaus SU(2) field
         result = SpinVector( strength*(cos(angle)*SpinVector.Pauli.x   ...
