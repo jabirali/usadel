@@ -128,7 +128,7 @@ classdef Metal < handle
             spmd
                 for m=drange(1:length(self.energies))
                     % Progress information
-                    self.print('[ %2.f / %2.f ]   iteration starting...', m, length(self.energies));
+                    self.print('[ %2.f / %2.f ]  E = %2.4f ', m, length(self.energies), self.energies(m));
                     
                     % Vectorize the current state of the system for the given
                     % energy, and use it as an initial guess for the solution
@@ -146,9 +146,6 @@ classdef Metal < handle
                     for n=1:length(self.positions)
                         self.states(n,m) = State(solution(:,n));
                     end
-                                    
-                    % Progress information
-                    self.print('[ %2.f / %2.f ]   iteration complete!', m, length(self.energies));
                     
                     % Small time delay to prevent the interpreter from getting sluggish or killed by the system
                     pause(self.delay);
