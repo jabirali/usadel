@@ -86,11 +86,11 @@ classdef Metal < handle
             
             % Coefficients in the equations for the Riccati parameter gamma
             self.coeff1{1} = -2;
-            self.coeff1{2} = -2i/self.thouless;
+            self.coeff1{2} = -2i/self.thouless + 0.0001;
             
             % Coefficients in the equations for the Riccati parameter gamma~
-            self.coeff2{1} = self.coeff1{1};
-            self.coeff2{2} = self.coeff1{2};
+            self.coeff2{1} = -2;
+            self.coeff2{2} = -2i/self.thouless - 0.0001;
         end
         
         function update_boundary_left(self, other)
@@ -125,7 +125,7 @@ classdef Metal < handle
             end
                 
             % Parallelize the loop over the energies of the system
-            %spmd
+            spmd
                 for m=drange(1:length(self.energies))
                     % Progress information
                     self.print('[ %2.f / %2.f ]   iteration starting...', m, length(self.energies));
@@ -152,7 +152,7 @@ classdef Metal < handle
                     
                     % Small time delay to prevent the interpreter from getting sluggish or killed by the system
                     pause(self.delay);
-                    %end
+                    end
                 end
             end
         
@@ -209,7 +209,7 @@ classdef Metal < handle
                     dos(m) = dos(m) + self.states(n,m).eval_ldos;
                 end
             end
-                        
+            
             % Plot a cubic interpolation of the results
             energies = linspace(0,self.energies(end), 100);
             plot(energies, pchip(self.energies, dos, energies));
@@ -227,11 +227,11 @@ classdef Metal < handle
                     triplet(n) = triplet(n) + norm(self.states(n,m).triplet);
                 end
             end
-                        
+            
             % Plot cubic interpolations of the results
             positions = linspace(0, self.positions(end), 100);
             plot(positions, pchip(self.positions, singlet, positions), ...
-                 positions, pchip(self.positions, triplet, positions));
+                positions, pchip(self.positions, triplet, positions));
             xlabel('Relative position');
             ylabel('Distribution');
             legend('Singlet', 'Triplet');
@@ -245,11 +245,11 @@ classdef Metal < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function dydx = jacobian(self, x, y, energy)
-            % This function takes a Metal object 'self', the position 'x', 
-            % the current state vector 'y', and an energy as inputs, and 
-            % calculates the Jacobian of the system. This is performed 
+            % This function takes a Metal object 'self', the position 'x',
+            % the current state vector 'y', and an energy as inputs, and
+            % calculates the Jacobian of the system. This is performed
             % using the Riccati parametrized Usadel equations.
-                                    
+            
             % Extract the Riccati parameters and their derivatives
             [g,dg,gt,dgt] = State.unpack(y);
             
@@ -261,16 +261,16 @@ classdef Metal < handle
             % according to the Usadel equation in the metal
             d2g  = self.coeff1{1} * dg*Nt*gt*dg + self.coeff1{2} * energy*g;
             d2gt = self.coeff2{1} * dgt*N*g*dgt + self.coeff2{2} * energy*gt;
-                                    
+            
             % Pack the results into a state vector
             dydx = State.pack(dg,d2g,dgt,d2gt);
         end
         
         function residue = boundary(self, y1, y2, energy)
-            % This function takes a Metal object 'self', the position 'x', 
-            % the current state vector 'y', and an energy as inputs, and 
+            % This function takes a Metal object 'self', the position 'x',
+            % the current state vector 'y', and an energy as inputs, and
             % calculates the Kuprianov-Lukichev boundary conditions.
-          
+            
             % State in the material to the left
             s0   = self.boundary_left(self.energy_index(energy));
             g0   = s0.g;
@@ -290,11 +290,11 @@ classdef Metal < handle
             dg3  = s3.dg;
             gt3  = s3.gt;
             dgt3 = s3.dgt;
-             
+            
             % Calculate the normalization matrices
             N0  = inv( eye(2) - g0*gt0 );
             Nt0 = inv( eye(2) - gt0*g0 );
-
+            
             N3  = inv( eye(2) - g3*gt3 );
             Nt3 = inv( eye(2) - gt3*g3 );
             
@@ -305,8 +305,8 @@ classdef Metal < handle
             
             dg2  = dg2  - ( eye(2) - g2*gt3 )*N3*(  g2  - g3  )/self.interface_right;
             dgt2 = dgt2 - ( eye(2) - gt2*g3 )*Nt3*( gt2 - gt3 )/self.interface_right;
-
-            % Vectorize the results of the calculations, and return it            
+            
+            % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);
         end
     end
