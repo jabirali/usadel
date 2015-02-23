@@ -29,27 +29,7 @@ classdef SpinVector
             self.x = Ax * eye(2);
             self.y = Ay * eye(2);
             self.z = Az * eye(2);
-            
-            % If the arguments are scalars, multiply by identity matrices;
-            % If not, just use the input arguments as the components of A.
-            % if isscalar(Ax)
-            %     self.x = Ax .* eye(2);
-            % else
-            %     self.x = Ax;
-            % end
-            % 
-            % if isscalar(Ay)
-            %     self.y = Ay .* eye(2);
-            % else
-            %     self.y = Ay;
-            % end
-            % 
-            % if isscalar(Az)
-            %     self.z = Az .* eye(2);
-            % else
-            %     self.z = Az;
-            % end
-        end
+        end        
         
         
         
@@ -107,12 +87,6 @@ classdef SpinVector
             lhs.x = lhs.x+rhs.x;
             lhs.y = lhs.y+rhs.y;
             lhs.z = lhs.z+rhs.z;
-            
-            % if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
-            %     result = SpinVector(lhs.x+rhs.x, lhs.y+rhs.y, lhs.z+rhs.z);
-            % else
-            %     error('SpinVector.plus: You can only add a spin vector to another spin vector.');
-            % end
         end
         
         function lhs = minus(lhs, rhs)
@@ -120,12 +94,6 @@ classdef SpinVector
             lhs.x = lhs.x-rhs.x;
             lhs.y = lhs.y-rhs.y;
             lhs.z = lhs.z-rhs.z;
-            
-            % if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
-            %     result = SpinVector(lhs.x-rhs.x, lhs.y-rhs.y, lhs.z-rhs.z);
-            % else
-            %     error('SpinVector.minus: You can only subtract spin vectors from each other.');
-            % end
         end
         
         function lhs = times(lhs, rhs)
@@ -133,12 +101,6 @@ classdef SpinVector
             lhs.x = lhs.x*rhs.x;
             lhs.y = lhs.y*rhs.y;
             lhs.z = lhs.z*rhs.z;
-
-            % if isa(lhs, 'SpinVector') && isa(rhs, 'SpinVector')
-            %     result = SpinVector(lhs.x*rhs.x,lhs.y*rhs.y,lhs.z*rhs.z);
-            % else
-            %     error('SpinVector.times: You can only arraywise multiply two spin vectors.');
-            % end
         end
         
         function result = mtimes(lhs, rhs)
@@ -179,10 +141,6 @@ classdef SpinVector
             % current definition is optimized for even exponents, and
             % will not produce correct output for odd powers!
             
-            % if rhs ~= 2
-            %     error('SpinVector.mpower: The matrix power of a spin vector has only been defined for an exponent of two.');
-            % end
-            
             result = (lhs.x^2 + lhs.y^2 + lhs.z^2)^(rhs/2);
         end
         
@@ -214,15 +172,6 @@ classdef SpinVector
         % a Rashba--Dresselhaus coupling in the xy-plane. The coupling
         % constants are given in polar coordinates, so that the Rashba constant
         % is strength*sin(angle), and the Dresselhaus one strength*cos(angle).
-        %
-        % Input:
-        %   strength        Strength of the spin-orbit coupling;
-        %                   increases both Rashba and Dresselhaus couplings.
-        %   angle           Angle between coupled spin and momentum components;
-        %                   rotates between Dresselhaus and Rashba couplings.
-        % Output:
-        %   A               3x2x2 SU(2) valued vector field that describes the
-        %                   Rashba--Dresselhaus spin-orbit coupling above.
         
         % TODO: Add another argument to add SOC along z-axis.
 

@@ -6,7 +6,9 @@
 % This class is mainly intended for use with differential equation
 % solvers, and therefore provides the method 'vectorize' to pack the
 % internal variables in a vector format, and constructor State(...)
-% that is able to unpack this vector format.
+% that is able to unpack this vector format. Alternatively, the
+% vectorization can be performed without instantiating the class at all
+% by calling the static methods 'pack' and 'unpack'.
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-14
@@ -40,21 +42,19 @@ classdef State
                     % If we get one input, then assume that we got a vector
                     % created by 'vectorize', and reverse the procedure
                     
-                    args     = reshape(varargin{1}, 2, 8);
-                    self.g   = args(:,1:2);
-                    self.dg  = args(:,3:4);
-                    self.gt  = args(:,5:6);
-                    self.dgt = args(:,7:8);
+                    [self.g,self.dg,self.gt,self.dgt] = self.unpack(varargin{1});
+                    
                 case 4
                     % If we get four input arguments, then assume that
                     % these correspond to g, dg, gt, and dgt, respectively.
                     % Multiply with a 2x2 identity matrix in case the
-                    % input arguments were scalars.
+                    % input arguments were scalars and not matrices.
                     
                     self.g   = varargin{1} * eye(2);
                     self.dg  = varargin{2} * eye(2);
                     self.gt  = varargin{3} * eye(2);
                     self.dgt = varargin{4} * eye(2);
+                    
                 otherwise
                     % In any other case, we assume that we were called as
                     % an empty constructor, so do nothing to the members.
@@ -77,31 +77,9 @@ classdef State
         % Definition of other useful methods
         function result = vectorize(self)
             % Convert the internal data structure to a vector shape
-            result = reshape([self.g self.dg self.gt self.dgt], 1, 16);
-                     %[self.vectorize_g  self.vectorize_dg ...
-                      %self.vectorize_gt self.vectorize_dgt]';
+            result = self.pack(self.g,self.dg,self.gt,self.dgt);
         end
-        
-        function result = vectorize_g(self)
-            % Convert part of the internal data structure to a vector shape
-            result = reshape(self.g,  1, 4);
-        end
-        
-        function result = vectorize_dg(self)
-            % Convert part of the internal data structure to a vector shape
-            result = reshape(self.dg,  1, 4);
-        end
-        
-        function result = vectorize_gt(self)
-            % Convert part of the internal data structure to a vector shape
-            result = reshape(self.gt,  1, 4);
-        end
-        
-        function result = vectorize_dgt(self)
-            % Convert part of the internal data structure to a vector shape
-            result = reshape(self.dgt,  1, 4);
-        end
-        
+                
         function g = eval_g(self)
             % Return the Green's function matrix g (change from Riccati parametrization to normal Green's function)
             g = ( eye(2) - self.g*self.gt ) \ ( eye(2) + self.g*self.gt );
@@ -141,6 +119,29 @@ classdef State
             % This method returns the long-range triplet component
             % (perpendicular to the exchange-field provided as argument)
             result = self.triplet - self.srtc(exchange);
+        end
+    end
+    
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Define static methods (available without object instantiation)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    methods (Static)
+        function [g,dg,gt,dgt] = unpack(vector)
+            % This method is used to unpack a 16 element state vector into
+            % the Riccati parametrized Green's function it represents.
+            args = reshape(vector, 2, 8);
+            g    = args(:,1:2);
+            dg   = args(:,3:4);
+            gt   = args(:,5:6);
+            dgt  = args(:,7:8);
+        end
+        
+        function vector = pack(g,dg,gt,dgt)
+            % This method is used to pack Riccati parametrized Green's
+            % functions into a 1x16 state vector.
+            vector = reshape([g dg gt dgt], 16, 1);
         end
     end
 end

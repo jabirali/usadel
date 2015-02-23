@@ -22,19 +22,18 @@ classdef Metal < handle
         boundary_right  = State.empty(0);    % Riccati parameters and derivatives at the right boundary
         
         % Properties that determine the physical characteristics of the system
-        length          = 1;                 % Length of the system
-        thouless        = 1;                 % Thouless energy of the system
         interface_left  = inf;               % Interface parameter zeta at the left boundary
         interface_right = inf;               % Interface parameter zeta at the right boundary
+        thouless        = 1;                 % Thouless energy of the system
         
         % Properties that are used during simulations
         coeff1  = {};                        % Coefficients in the differential equations for gamma
         coeff2  = {};                        % Coefficients in the differential equations for gamma~
         
         % Properties that determine the simulation behavior
-        sim_error_abs = 1e-3;                % Maximum absolute error when simulating
-        sim_error_rel = 1e-3;                % Maximum relative error when simulating
-        sim_grid_size = 512;                 % Maximum grid size to use in simulations
+        error_abs = 1e-2;                    % Maximum absolute error when simulating
+        error_rel = 1e-2;                    % Maximum relative error when simulating
+        grid_size = 512;                     % Maximum grid size to use in simulations
         
         % Properties that determine the behaviour of the program
         debug         = true;                % Whether to show intermediate results or not
@@ -49,7 +48,7 @@ classdef Metal < handle
         % Define methods that instantiate the object
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = Metal(positions, energies, material_length, material_thouless)
+        function self = Metal(positions, energies, thouless)
             % This method constructs a Metal instance from a vector of
             % positions, a vector of energies, the length of the material,
             % and the Thouless energy of the material.
@@ -57,8 +56,7 @@ classdef Metal < handle
             % Set the internal properties to the provided values
             self.positions = positions;
             self.energies  = energies;
-            self.length    = material_length;
-            self.thouless  = material_thouless;
+            self.thouless  = thouless;
             
             % Initialize the internal state to a bulk superconductor with
             % superconducting gap 1. This is useful as an initial guess
@@ -94,6 +92,18 @@ classdef Metal < handle
             self.coeff2{1} = self.coeff1{1};
             self.coeff2{2} = self.coeff1{2};
         end
+        
+        function update_boundary_left(self, other)
+            % This function updates the boundary condition to the left
+            % based on the current state of another material.
+            self.boundary_left(:) = other.states(end,:);
+        end
+
+        function update_boundary_right(self, other)
+            % This function updates the boundary condition to the left
+            % based on the current state of another material.
+            self.boundary_right(:) = other.states(1,:);
+        end
 
         function update_state(self)
             % This function solves the Usadel equation numerically for the
@@ -101,7 +111,7 @@ classdef Metal < handle
             % stored state of the system.
             
             % Set the accuracy of the numerical solution
-            options = bvpset('AbsTol',self.sim_error_abs,'RelTol',self.sim_error_rel,'Nmax',self.sim_grid_size);
+            options = bvpset('AbsTol',self.error_abs,'RelTol',self.error_rel,'Nmax',self.grid_size);
 
             % Partially evaluate the Jacobian matrix and boundary conditions
             % for the different material energies, and store the resulting 
@@ -239,15 +249,9 @@ classdef Metal < handle
             % the current state vector 'y', and an energy as inputs, and 
             % calculates the Jacobian of the system. This is performed 
             % using the Riccati parametrized Usadel equations.
-            
-            % Instantiate a 'State' object based on the state vector
-            state = State(y);
                                     
             % Extract the Riccati parameters and their derivatives
-            g   = state.g;
-            dg  = state.dg;
-            gt  = state.gt;
-            dgt = state.dgt;
+            [g,dg,gt,dgt] = State.unpack(y);
             
             % Calculate the normalization matrices
             N  = inv( eye(2) - g*gt );
@@ -257,51 +261,53 @@ classdef Metal < handle
             % according to the Usadel equation in the metal
             d2g  = self.coeff1{1} * dg*Nt*gt*dg + self.coeff1{2} * energy*g;
             d2gt = self.coeff2{1} * dgt*N*g*dgt + self.coeff2{2} * energy*gt;
-                        
-            % Fill the results of the calculations back into a 'State' object
-            state.g   = dg;
-            state.dg  = d2g;
-            state.gt  = dgt;
-            state.dgt = d2gt;
-            
+                                    
             % Pack the results into a state vector
-            dydx = state.vectorize;
+            dydx = State.pack(dg,d2g,dgt,d2gt);
         end
         
         function residue = boundary(self, y1, y2, energy)
             % This function takes a Metal object 'self', the position 'x', 
             % the current state vector 'y', and an energy as inputs, and 
             % calculates the Kuprianov-Lukichev boundary conditions.
-            
+          
             % State in the material to the left
             s0   = self.boundary_left(self.energy_index(energy));
+            g0   = s0.g;
+            dg0  = s0.dg;
+            gt0  = s0.gt;
+            dgt0 = s0.dgt;
             
             % State at the left end of the material
-            s1   = State(y1);
+            [g1,dg1,gt1,dgt1] = State.unpack(y1);
             
             % State at the right end of the material
-            s2   = State(y2);
+            [g2,dg2,gt2,dgt2] = State.unpack(y2);
             
             % State in the material to the right
             s3   = self.boundary_right(self.energy_index(energy));
+            g3   = s3.g;
+            dg3  = s3.dg;
+            gt3  = s3.gt;
+            dgt3 = s3.dgt;
              
             % Calculate the normalization matrices
-            N0  = inv( eye(2) - s0.g*s0.gt );
-            Nt0 = inv( eye(2) - s0.gt*s0.g );
+            N0  = inv( eye(2) - g0*gt0 );
+            Nt0 = inv( eye(2) - gt0*g0 );
 
-            N3  = inv( eye(2) - s3.g*s3.gt );
-            Nt3 = inv( eye(2) - s3.gt*s3.g );
+            N3  = inv( eye(2) - g3*gt3 );
+            Nt3 = inv( eye(2) - gt3*g3 );
             
             % Calculate the deviation from the Kuprianov--Lukichev boundary
             % conditions, and store the results back into State instances
-            s1.dg  = s1.dg  - ( eye(2) - s1.g*s0.gt )*N0*(  s1.g  - s0.g  )/self.interface_left;
-            s1.dgt = s1.dgt - ( eye(2) - s1.gt*s0.g )*Nt0*( s1.gt - s0.gt )/self.interface_left;
+            dg1  = dg1  - ( eye(2) - g1*gt0 )*N0*(  g1  - g0  )/self.interface_left;
+            dgt1 = dgt1 - ( eye(2) - gt1*g0 )*Nt0*( gt1 - gt0 )/self.interface_left;
             
-            s2.dg  = s2.dg  - ( eye(2) - s2.g*s3.gt )*N3*(  s2.g  - s3.g  )/self.interface_right;
-            s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s2.gt - s3.gt )/self.interface_right;
+            dg2  = dg2  - ( eye(2) - g2*gt3 )*N3*(  g2  - g3  )/self.interface_right;
+            dgt2 = dgt2 - ( eye(2) - gt2*g3 )*Nt3*( gt2 - gt3 )/self.interface_right;
 
             % Vectorize the results of the calculations, and return it            
-            residue = [s1.vectorize_dg s1.vectorize_dgt s2.vectorize_dg s2.vectorize_dgt]';
+            residue = State.pack(dg1,dgt1,dg2,dgt2);
         end
     end
 end
