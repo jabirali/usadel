@@ -54,7 +54,8 @@ classdef Superconductor < Metal
         
         function plot_gap(self)
             % Plot the superconducting gap as a function of position
-            fplot(self.gap, [self.positions(1) self.positions(end)]);
+            xs = linspace(self.positions(1), self.positions(end));
+            plot(xs, self.gap(xs));
             xlabel('Relative position');
             ylabel('Superconducting gap');
         end        
@@ -85,12 +86,12 @@ classdef Superconductor < Metal
             
             % Coefficients in the equations for the Riccati parameter gamma
             self.coeff1{1} = -2;
-            self.coeff1{2} = -2i/self.thouless + 0.0001;
+            self.coeff1{2} = -2i/self.thouless;
             self.coeff1{3} = SpinVector.Pauli.y/self.thouless;
             
             % Coefficients in the equations for the Riccati parameter gamma~
             self.coeff2{1} = -2;
-            self.coeff2{2} = -2i/self.thouless - 0.0001;
+            self.coeff2{2} = -2i/self.thouless;
             self.coeff2{3} = -SpinVector.Pauli.y/self.thouless;
         end
 
@@ -220,7 +221,7 @@ classdef Superconductor < Metal
             % This function takes as its input an energy and a superconducting gap,
             % and returns a State object with Riccati parametrized Green's functions
             % that corresponds to a BCS superconductor bulk state.
-            theta = atanh(gap/(energy+0.001i));
+            theta = atanh(gap/(energy+0.0001i));
             c     = cosh(theta);
             s     = sinh(theta);
             

@@ -84,11 +84,11 @@ classdef Metal < handle
             
             % Coefficients in the equations for the Riccati parameter gamma
             self.coeff1{1} = -2;
-            self.coeff1{2} = -2i/self.thouless + 0.0001;
+            self.coeff1{2} = -2i/self.thouless;
             
             % Coefficients in the equations for the Riccati parameter gamma~
             self.coeff2{1} = -2;
-            self.coeff2{2} = -2i/self.thouless - 0.0001;
+            self.coeff2{2} = -2i/self.thouless;
         end
         
         function update_boundary_left(self, other)
