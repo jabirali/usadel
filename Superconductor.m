@@ -1,264 +1,221 @@
 % This defines a data structure that describes the physical state of a
 % superconducting material for a given range of positions and energies.
-% The most demanding calculations are parallellized using SPMD.
+% This class inherits the internal structure of the 'Metal' class.
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Inspired by a similar program written by Sol Jacobsen
 % Created 2015-02-15
-% Updated 2015-02-19
+% Updated 2015-02-24
 
-classdef Superconductor < handle
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Define the internal variables for the data structure
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+classdef Superconductor < Metal
     properties (GetAccess=public, SetAccess=public)
-        % Properties that determine the physical characteristics of the system
-        positions   = [];                    % Positions in the superconductor (relative to the material length)
-        energies    = [];                    % Energies of the superconductor (relative to the Thouless energy)
-        gap         = 0;                     % Superconducting gap at each position
-        states      = State.empty(0,0);      % Riccati parameters and their derivatives for each position and energy
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Define the internal variables of the Superconductor class
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        length          = 1;                 % Length of the system
-        strength        = 1;                 % Material constant N₀λ
-        temperature     = 0;                 % Temperature of the system (defaults to absolute zero)
-        diffusion       = 1;                 % Diffusion constant
-        interface_left  = inf;               % Interface parameter zeta (left)
-        interface_right = inf;               % Interface parameter zeta (right)
+        temperature = 0;       % Temperature of the system (relative to the critical temperature of a bulk superconductor)
+        strength    = 1;       % Strength of the superconductor (the material constant N0V which appears in the gap equation)
+        gap         = @(x) 1;  % Superconducting gap as a function of position (relative to the zero-temperature gap of a bulk superconductor)
         
-        boundary_left   = State.empty(0);    % Boundary condition (left)   (default: vacuum)
-        boundary_right  = State.empty(0);    % Boundary condition (right)  (default: vacuum)
-        
-        % Properties that determine the behavior of the program
-        sim_error_abs = 1e-2;                % Maximum absolute error when simulating
-        sim_error_rel = 1e-2;                % Maximum relative error when simulating
-        sim_grid_size = 128;                 % Maximum grid size to use in simulations
-
-        debug         = true;                % Whether to show intermediate results or not
-        plot          = true;                % Whether to plot intermediate results or not
-        delay         = 0;                   % How long to wait between program iterations
     end
     
-
     
     methods
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Define constructor and accessor methods
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+        % Define methods that instantiate the object
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function self = Superconductor(positions, energies, material_length, material_diffusion, material_strength)
-            % Define a constructor which initializes the Superconductor
-            % from a vector of positions, a vector of energies (where the
-            % last element is the Debye cutoff), the length of the material
-            % (scales the position vector), the material strength
-            % (N₀λ in the gap equation), and the diffusion constant.
-                        
-            % Set default values based on constructor arguments
-            self.positions = positions;
-            self.energies  = energies;
-            self.diffusion = material_diffusion;
-            self.length    = material_length;
-            self.strength  = material_strength;
-            
-            % Use eq. (3.34) in Tinkham to estimate the zero-temperature gap
-            self.gap = @(x) abs(energies(end))/sinh(inv(material_strength));
-            
-            % Set the maximum grid size for numerical calculations to 4x
-            % the number of positions, rounded up to nearest power of two
-            self.sim_grid_size = 2^(3+floor(log2(length(positions)-1)));
-            
-            % Initialize the internal state to a BCS bulk superconductor
-            self.states(length(positions), length(energies)) = State;
-            for i=1:length(positions)
-                for j=1:length(energies)
-                    self.states(i,j) = Superconductor.Bulk(energies(j), self.gap(1));
-                end
-            end
-            
-            % Set the boundary conditions to vacuum states by default
-            self.boundary_left(length(energies))  = State;
-            self.boundary_right(length(energies)) = State;            
+        function self = Superconductor(positions, energies, thouless, strength)
+            % This method constructs a Superconductor instance from a vector
+            % of positions, a vector of energies, the Thouless energy, and
+            % the strength of the superconductivity (material constant N0V).
+
+            % Initialize the Metal superclass
+            self@Metal(positions, energies, thouless);
+
+            % Set the internal variables based on constructor arguments
+            self.strength = strength;
         end
+
         
-        function index = position_index(self, position)
-            % Returns the vector index corresponding to a given energy value
-            index = find(abs(self.positions-position) < 1e-5, 1, 'first');
-            if ~isscalar(index)
-                error('Superconductor.position_index: Provided value is not in the position vector!');
-            end
-        end
-
-        function index = energy_index(self, energy)
-            % Returns the vector index corresponding to a given energy value
-            index = find(abs(self.energies-energy) < 1e-5, 1, 'first');
-            if ~isscalar(index)
-                error('Superconductor.energy_index: Provided value is not in the energy vector!');
-            end
-        end
-                
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Define methods which are useful for working with superconductors
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function result = critical(self)
             % This function returns whether or not the system is above
-            % critical temperature, i.e. if the superconducting gap is zero
-            % in the middle of the superconductor
-            result = ( abs(self.gap(1/2)) < 1e-8 );
+            % critical temperature. The superconductor is considered
+            % critical if the superconducting gap is roughly zero at
+            % the center of the material.
+            
+            result = ( abs(self.gap(mean(self.positions))) < 1e-8 );
         end        
+        
+        function plot_gap(self)
+            % Plot the superconducting gap as a function of position
+            fplot(self.gap, [self.positions(1) self.positions(end)]);
+            xlabel('Relative position');
+            ylabel('Superconducting gap');
+        end        
+
         
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Define methods that update the internal state of the object
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
         
-        function gap_update(self)
-            % This function updates the vector containing the current
-            % estimate of the superconducting gap at equilibrium.
+        function update_gap(self)
+            % This function updates the gap function, which contains the 
+            % current estimate of the superconducting gap in the material.
             
-            % Update the gap vector
+            % Calculate the gap at the positions in the system
             gaps = [];
             for n=1:length(self.positions)
-                gaps(n) = self.gap_calculate(self, self.positions(n));
+                gaps(n) = self.calculate_gap(self, self.positions(n));
             end
             
-            % Create a piecewise cubic interpolation
+            % Create a piecewise cubic interpolation of the results
             self.gap = griddedInterpolant(self.positions, gaps, 'pchip');
         end
         
-        function state_update(self)
-            % This function solves the Usadel equation numerically for the
-            % given position and energy range, using the current stored 
-            % estimate for the superconducting gap.
-
-            % Set the accuracy of the numerical solution
-            options = bvpset('AbsTol',self.sim_error_abs,'RelTol',self.sim_error_rel,'Nmax',self.sim_grid_size);
-
-            % Partially evaluate the Jacobian and boundary conditions
-            % for the different superconductor energies, and put the
-            % resulting lambda functions in a vector. These functions
-            % are passed on to bvp6c when solving the equations.
-            jc = {};
-            bc = {};
-            for m=1:length(self.energies)
-                jc{m} = @(x,y) self.jacobian(self,x,y,self.energies(m));
-                bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
-            end
-                
-            % Solving the differential equation is slow, and the solutions
-            % at different energies are independent, so we parallelize this
-            %spmd
-                for m=drange(1:length(self.energies))
-                    % Progress information
-                    self.print('[ %2.f / %2.f ]   iteration starting...', m, length(self.energies));
-                    
-                    % Vectorize the current state of the system for the given
-                    % energy, and use it as an initial guess for the solution
-                    current = zeros(16,length(self.positions));
-                    for n=1:length(self.positions)
-                        current(:,n) = self.states(n,m).vectorize;
-                    end
-                    initial = bvpinit(self.positions', current);
-                    
-                    % Try to solve the differential equation; if the solver
-                    % returns an error, don't crash the program, but display a
-                    % warning message and continue.
-                    
-                        % Solve the differential equation, and evaluate the
-                        % solution on the position vector of the superconductor 
-                        solution = deval(bvp6c(jc{m},bc{m},initial,options), self.positions);
-
-                        % Update the current state of the system based on the solution
-                        for n=1:length(self.positions)
-                            self.states(n,m) = State(solution(:,n));
-                        end
-                                    
-                        % Progress information
-                        self.print('[ %2.f / %2.f ]   iteration complete!', m, length(self.energies));
-% 
-%                     catch
-%                         % Display a warning message if the computation failed
-%                         self.print('[ %2.f / %2.f ]   iteration failed to converge, skipping...', m, length(self.energies));
-%                     end
-                    
-                % Small time delay to prevent the interpreter from getting
-                % sluggish or killed by the system
-                pause(self.delay);
-                %end
-            end
+        function update_coeff(self)
+            % This function updates the vector of coefficients passed to
+            % the functions 'jacobian' and 'boundary' when solving equations.
+            
+            % Coefficients in the equations for the Riccati parameter gamma
+            self.coeff1{1} = -2;
+            self.coeff1{2} = -2i/self.thouless + 0.0001;
+            self.coeff1{3} = SpinVector.Pauli.y/self.thouless;
+            
+            % Coefficients in the equations for the Riccati parameter gamma~
+            self.coeff2{1} = -2;
+            self.coeff2{2} = -2i/self.thouless - 0.0001;
+            self.coeff2{3} = -SpinVector.Pauli.y/self.thouless;
         end
-        
+
         function update(self)
-            % This function updates the internal state of the
-            % superconductor object by calling first 'state_update' and 
-            % then 'gap_update'. Always run this after changing the
-            % boundary conditions or temperature of the system.
+            % This function updates the internal state of the superconductor
+            % by calling the other update methods. Always run this after
+            % updating the boundary conditions or physical properties of
+            % the superconductor.
             
             % Update the state
-            self.state_update;
-            self.gap_update;
+            self.update_coeff;
+            self.update_state;
+            self.update_gap;
                 
             % Plot the current DOS
             if self.plot
                 self.plot_dos;
             end
         end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Define miscellaneous methods for showing the internal state
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-        function plot_dos(self)
-            % Calculate the density of states
-            dos = zeros(length(self.energies), 1);
-            for m=1:length(self.energies)
-                for n=1:length(self.positions)
-                    dos(m) = dos(m) + self.states(n,m).eval_ldos;
-                end
-            end
-                        
-            % Plot a cubic interpolation of the results
-            energies = linspace(0,self.energies(end), 100);
-            plot(energies, pchip(self.energies, dos, energies));
-            xlabel('Energy');
-            ylabel('Density of States');
-        end
-        
-        function plot_dist(self)
-            % Calculate the singlet and triplet distributions
-            singlet = zeros(length(self.positions), 1);
-            triplet = zeros(length(self.positions), 1);
-            for m=1:length(self.energies)
-                for n=1:length(self.positions)
-                    singlet(n) = singlet(n) + norm(self.states(n,m).singlet);
-                    triplet(n) = triplet(n) + norm(self.states(n,m).triplet);
-                end
-            end
-                        
-            % Plot cubic interpolations of the results
-            positions = linspace(0, self.positions(end), 100);
-            plot(positions, pchip(self.positions, singlet, positions), ...
-                 positions, pchip(self.positions, triplet, positions));
-            xlabel('Relative position');
-            ylabel('Distribution');
-            legend('Singlet', 'Triplet');
-        end
-
-
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Define miscellaneous methods for use when debugging
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-
-        function print(self,varargin)
-            % This function is used to print progress information if the
-            % 'debug' flag is set to 'true'.
-            
-            if self.debug
-                fprintf(':: Superconductor: %s\n', sprintf(varargin{:}));
-            end
-        end
-    end
+    end        
     
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Define static methods (available without object instantiation)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     methods (Static)        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Define static methods (available without object instantiation)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+
+        function dydx = jacobian(self, x, y, energy)
+            % This function takes a Superconductor object 'self', the
+            % position 'x', the current state vector 'y', and an energy
+            % as inputs, and calculates the Jacobian of the system. This 
+            % is performed using the Riccati parametrized Usadel equations.
+            
+            % Extract the Riccati parameters and their derivatives
+            [g,dg,gt,dgt] = State.unpack(y);
+            
+            % Retrieve the superconducting gap at this point
+            gap = self.gap(x);
+            
+            % Calculate the normalization matrices
+            N  = inv( eye(2) - g*gt );
+            Nt = inv( eye(2) - gt*g );
+            
+            % Calculate the second derivatives of the Riccati parameters
+            % according to the Usadel equations in the superconductor
+            d2g  = self.coeff1{1} * dg*Nt*gt*dg                     ...
+                 + self.coeff1{2} * energy*g                        ...
+                 + gap * (self.coeff1{3} + g*self.coeff2{3}*g);
+             
+            d2gt = self.coeff2{1} * dgt*N*g*dgt                     ...
+                 + self.coeff2{2} * energy*gt                       ...
+                 + gap * (self.coeff2{3} + gt*self.coeff1{3}*gt);
+            
+            % Pack the results into a state vector
+            dydx = State.pack(dg,d2g,dgt,d2gt);
+        end
+        
+        function residue = boundary(self, y1, y2, energy)
+            % This function takes a Metal object 'self', the position 'x',
+            % the current state vector 'y', and an energy as inputs, and
+            % calculates the Kuprianov-Lukichev boundary conditions.
+            
+            % State in the material to the left
+            s0   = self.boundary_left(self.energy_index(energy));
+            g0   = s0.g;
+            dg0  = s0.dg;
+            gt0  = s0.gt;
+            dgt0 = s0.dgt;
+            
+            % State at the left end of the material
+            [g1,dg1,gt1,dgt1] = State.unpack(y1);
+            
+            % State at the right end of the material
+            [g2,dg2,gt2,dgt2] = State.unpack(y2);
+            
+            % State in the material to the right
+            s3   = self.boundary_right(self.energy_index(energy));
+            g3   = s3.g;
+            dg3  = s3.dg;
+            gt3  = s3.gt;
+            dgt3 = s3.dgt;
+            
+            % Calculate the normalization matrices
+            N0  = inv( eye(2) - g0*gt0 );
+            Nt0 = inv( eye(2) - gt0*g0 );
+            
+            N3  = inv( eye(2) - g3*gt3 );
+            Nt3 = inv( eye(2) - gt3*g3 );
+            
+            % Calculate the deviation from the Kuprianov--Lukichev b.c.
+            dg1  = dg1  - ( eye(2) - g1*gt0 )*N0*(  g0  - g1  )/self.interface_left;
+            dgt1 = dgt1 - ( eye(2) - gt1*g0 )*Nt0*( gt0 - gt1 )/self.interface_left;
+            
+            dg2  = dg2  - ( eye(2) - g2*gt3 )*N3*(  g3  - g2  )/self.interface_right;
+            dgt2 = dgt2 - ( eye(2) - gt2*g3 )*Nt3*( gt3 - gt2 )/self.interface_right;
+            
+            % Vectorize the results of the calculations, and return it
+            residue = State.pack(dg1,dgt1,dg2,dgt2);
+        end
+        
+        function gap = calculate_gap(self, position)
+            % This function extracts the singlet components of the Green's
+            % function at a given position, and then uses the gap equation
+            % to calculate the superconducting gap at that point.
+            
+            % Extract the singlet components from the states
+            singlets = zeros(size(self.energies));
+            index    = self.position_index(position);
+            for m=1:length(self.energies)
+                singlets(m) = self.states(index,m).singlet;
+            end
+            
+            % Create a cubic interpolation of the numerical data above,
+            % multiplied by the tanh(E/2T) kernel in the gap equation.
+            % Using eq. (4.34) in Fossheim & Sudbø, we can rewrite the 
+            % argument of the hyperbolic tangent such that E is measured 
+            % relative to the zero-temperature gap, and T relative to Tc.
+            kernel = @(E) real(pchip(self.energies, singlets, E)) ...
+                       .* tanh(0.881939 * E/self.temperature);
+                   
+            % Perform a numerical integration of the interpolation up to
+            % the Debye cutoff. The Debye cutoff has been calculated from
+            % the superconductor strength using eq. (3.34) in Tinkham.
+            gap = -self.strength * integral(kernel, 0, sinh(inv(self.strength)));
+        end
+        
         function result = Bulk(energy, gap)
             % This function takes as its input an energy and a superconducting gap,
             % and returns a State object with Riccati parametrized Green's functions
@@ -269,120 +226,6 @@ classdef Superconductor < handle
             
             result = State([0,  s/(1+c); -s/(1+c), 0], 0, ...
                            [0, -s/(1+c);  s/(1+c), 0], 0);
-        end
-    
-        function dydx = jacobian(self, x, y, energy)
-            % This function takes a Superconductor object 'self', the
-            % position 'x', the current state vector 'y', and an energy as
-            % inputs, and calculates the Jacobian of the system. This is
-            % performed using the Riccati parametrized Usadel equations.
-            
-            % Instantiate a 'State' object based on the state vector
-            state = State(y);
-            
-            % Extract the superconducting gap
-            gap = self.gap(x);
-            
-            % Calculate the Thouless energy
-            thouless = self.diffusion/self.length^2;
-            
-            % Extract the Riccati parameters and their derivatives
-            g   = state.g;
-            dg  = state.dg;
-            gt  = state.gt;
-            dgt = state.dgt;
-            
-            % Calculate the normalization matrices
-            N  = inv( eye(2) - g*gt );
-            Nt = inv( eye(2) - gt*g );
-            
-            % Calculate the second derivatives of the Riccati parameters
-            % according to the Usadel equation in the superconductor
-            d2g  =  - 2*dg*Nt*gt*dg                                     ...
-                    - 2i*((energy+0.001i)/thouless)*g                   ...
-                    - (gap/thouless)*(SpinVector.Pauli.y - g * SpinVector.Pauli.y * g);
-            
-            d2gt =  - 2*dgt*N*g*dgt                                     ...
-                    - 2i*((energy-0.001i)/thouless)*gt                  ...
-                    + (gap/thouless)*(SpinVector.Pauli.y - gt * SpinVector.Pauli.y * gt);
-            
-            % Fill the results of the calculations back into a 'State' object
-            state.g   = dg;
-            state.dg  = d2g;
-            state.gt  = dgt;
-            state.dgt = d2gt;
-            
-            % Pack the results into a state vector
-            dydx = state.vectorize;
-        end
-        
-        function residue = boundary(self, y1, y2, energy)
-            % This function takes a Superconductor object 'self', the
-            % position 'x', the current state vector 'y', and an energy as
-            % inputs, and calculates the Kuprianov-Lukichev boundary
-            % conditions for the system. 
-            
-            % State in the material to the left of the superconductor
-            s0   = self.boundary_left(self.energy_index(energy));
-            
-            % State at the left end of the superconductor
-            s1   = State(y1);
-            
-            % State at the right end of the superconductor
-            s2   = State(y2);
-            
-            % State in the material to the right of the superconductor
-            s3   = self.boundary_right(self.energy_index(energy));
-             
-            % Calculate the normalization matrices
-            N0  = inv( eye(2) - s0.g*s0.gt );
-            Nt0 = inv( eye(2) - s0.gt*s0.g );
-
-            N3  = inv( eye(2) - s3.g*s3.gt );
-            Nt3 = inv( eye(2) - s3.gt*s3.g );
-            
-            % Calculate the deviation from the Kuprianov--Lukichev boundary
-            % conditions, and store the results back into State instances
-            s1.dg  = s1.dg  - ( eye(2) - s1.g*s0.gt )*N0*(  s0.g  - s1.g  )/self.interface_left;
-            s1.dgt = s1.dgt - ( eye(2) - s1.gt*s0.g )*Nt0*( s0.gt - s1.gt )/self.interface_left;
-            
-            s2.dg  = s2.dg  - ( eye(2) - s2.g*s3.gt )*N3*(  s3.g  - s2.g  )/self.interface_right;
-            s2.dgt = s2.dgt - ( eye(2) - s2.gt*s3.g )*Nt3*( s3.gt - s2.gt )/self.interface_right;
-
-            % Vectorize the results of the calculations, and return it            
-            residue = [s1.vectorize_dg s1.vectorize_dgt s2.vectorize_dg s2.vectorize_dgt]';
-        end
-        
-        function gap = gap_calculate(self, position)
-            % This function extracts the singlet components of the Green's
-            % function at a given position, and then uses the gap equation
-            % to calculate the superconducting gap at that point.
-            
-            singlets = zeros(size(self.energies));
-            index    = self.position_index(position);
-            
-            % Extract the singlet components from the states
-            for m=1:length(self.energies)
-                singlets(m) = self.states(index,m).singlet;
-            end
-            
-            % Create a cubic interpolation of the numerical data above,
-            % multiplied by the tanh(ε/2T) kernel in the gap equation
-            kernel = @(E) real(pchip(self.energies, singlets, E)) ...
-                       .* tanh(E./(2*self.temperature));
-                   
-            % Plot the current integral kernel
-            if self.plot
-                energies = linspace(0, self.energies(end), 100);
-                plot(energies, kernel(energies));
-                title('Integrand used in the gap equation');
-                xlabel('Energy');
-                ylabel('Re[f(E)] tanh(E/2T)');
-            end
-
-            % Perform a numerical integration of the interpolation up to
-            % the Debye cutoff (presumably the last element of 'energies')
-            gap = -self.strength * integral(kernel, 0, self.energies(end));
         end
     end
 end

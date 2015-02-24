@@ -6,7 +6,7 @@
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-23
-% Updated 2015-02-23
+% Updated 2015-02-24
 
 classdef Metal < handle
     properties (GetAccess=public, SetAccess=public)
@@ -33,7 +33,7 @@ classdef Metal < handle
         % Properties that determine the simulation behavior
         error_abs = 1e-2;                    % Maximum absolute error when simulating
         error_rel = 1e-2;                    % Maximum relative error when simulating
-        grid_size = 512;                     % Maximum grid size to use in simulations
+        grid_size = 1024;                    % Maximum grid size to use in simulations
         
         % Properties that determine the behaviour of the program
         debug         = true;                % Whether to show intermediate results or not
@@ -50,8 +50,7 @@ classdef Metal < handle
 
         function self = Metal(positions, energies, thouless)
             % This method constructs a Metal instance from a vector of
-            % positions, a vector of energies, the length of the material,
-            % and the Thouless energy of the material.
+            % positions, a vector of energies, and the Thouless energy.
             
             % Set the internal properties to the provided values
             self.positions = positions;
@@ -81,8 +80,7 @@ classdef Metal < handle
         
         function update_coeff(self)
             % This function updates the vector of coefficients passed to
-            % the differential equation solver, which in turn passes it to
-            % the functions 'usadel' and 'boundary' when solving equations.
+            % the functions 'jacobian' and 'boundary' when solving equations.
             
             % Coefficients in the equations for the Riccati parameter gamma
             self.coeff1{1} = -2;
@@ -125,7 +123,7 @@ classdef Metal < handle
             end
                 
             % Parallelize the loop over the energies of the system
-            spmd
+            %spmd
                 for m=drange(1:length(self.energies))
                     % Progress information
                     self.print('[ %2.f / %2.f ]  E = %2.4f ', m, length(self.energies), self.energies(m));
@@ -151,7 +149,7 @@ classdef Metal < handle
                     pause(self.delay);
                     end
                 end
-            end
+            %end
         
         
         function update(self)
@@ -295,8 +293,7 @@ classdef Metal < handle
             N3  = inv( eye(2) - g3*gt3 );
             Nt3 = inv( eye(2) - gt3*g3 );
             
-            % Calculate the deviation from the Kuprianov--Lukichev boundary
-            % conditions, and store the results back into State instances
+            % Calculate the deviation from the Kuprianov--Lukichev b.c.
             dg1  = dg1  - ( eye(2) - g1*gt0 )*N0*(  g1  - g0  )/self.interface_left;
             dgt1 = dgt1 - ( eye(2) - gt1*g0 )*Nt0*( gt1 - gt0 )/self.interface_left;
             
