@@ -35,6 +35,18 @@ classdef Ferromagnet < Metal
             % Set the internal variables based on constructor arguments
             self.exchange  = exchange;
             self.spinorbit = spinorbit;
+            
+            % Add an infinitesimal srtc to the initial state in order to
+            % improve the convergence of the differential equation solver
+            for n=1:length(positions)
+                for m=1:length(energies)
+                    triplet = (-1e-16 * exchange(1)) * SpinVector.Pauli.z  ...
+                            + (1e-16i * exchange(2)) * eye(2)              ...
+                            + (1e-16  * exchange(3)) * SpinVector.Pauli.x;
+                   self.states(n,m).g  = self.states(n,m).g  + triplet;
+                   self.states(n,m).gt = self.states(n,m).gt + triplet;
+                end
+            end
         end
         
 
@@ -87,9 +99,9 @@ classdef Ferromagnet < Metal
             % the functions 'jacobian' and 'boundary' when solving equations.
             
             % Coefficients in the equations for the Riccati parameter gamma
-            self.coeff1{1} = -2;
-            self.coeff1{2} = -2i/self.thouless;
-            self.coeff1{3} = (self.spinorbit^2 - i*self.exchange*SpinVector.Pauli)/self.thouless;
+            self.coeff1{1} = -2i/self.thouless;
+            self.coeff1{2} = (-i*self.exchange/self.thouless)*SpinVector.Pauli;
+            self.coeff1{3} = self.spinorbit^2/self.thouless;
             self.coeff1{4} = sqrt(2/self.thouless)    * self.spinorbit.x;
             self.coeff1{5} = sqrt(2/self.thouless)    * self.spinorbit.y;
             self.coeff1{6} = sqrt(2/self.thouless)    * self.spinorbit.z;
@@ -97,7 +109,7 @@ classdef Ferromagnet < Metal
             
             % Coefficients in the equations for the Riccati parameter gamma~
             self.coeff2{1} = self.coeff1{1};
-            self.coeff2{2} = self.coeff1{2};
+            self.coeff2{2} = conj(self.coeff1{2});
             self.coeff2{3} = conj(self.coeff1{3});
             self.coeff2{4} = conj(self.coeff1{4});
             self.coeff2{5} = conj(self.coeff1{5});
@@ -142,18 +154,18 @@ classdef Ferromagnet < Metal
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equations in the ferromagnet
-            d2g  = self.coeff1{1} * dg*Nt*gt*dg                                                                  ...
-                 + self.coeff1{2} * energy*g                                                                     ...
-                 + (self.coeff1{3} * g - g * self.coeff2{3})                                                     ...
+            d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * energy*g                                                  ...
+                 + (self.coeff1{2} + self.coeff1{3}) * g                                                         ...
+                 + g * (self.coeff2{2} - self.coeff2{3})                                                         ...
                  + (self.coeff1{4} * g + g * self.coeff2{4}) * Nt * (self.coeff2{4} + gt * self.coeff1{4} * g)   ...
                  + (self.coeff1{5} * g + g * self.coeff2{5}) * Nt * (self.coeff2{5} + gt * self.coeff1{5} * g)   ...
                  + (self.coeff1{6} * g + g * self.coeff2{6}) * Nt * (self.coeff2{6} + gt * self.coeff1{6} * g)   ...
                  + (self.coeff1{7} - g * self.coeff2{7} * gt) * N * dg                                           ...
                  + dg * Nt * (gt * self.coeff1{7} * g - self.coeff2{7});
-                 
-            d2gt = self.coeff2{1} * dgt*N*g*dgt                                                                  ...
-                 + self.coeff2{2} * energy*gt                                                                    ...
-                 + (self.coeff2{3} * gt - gt * self.coeff1{3})                                                   ...
+             
+            d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * energy*gt                                                 ...
+                 + (self.coeff2{2} + self.coeff2{3}) * gt                                                        ...
+                 + gt * (self.coeff1{2} - self.coeff1{3})                                                        ...
                  + (self.coeff2{4} * gt + gt * self.coeff1{4}) * N * (self.coeff1{4} + g * self.coeff2{4} * gt)  ...
                  + (self.coeff2{5} * gt + gt * self.coeff1{5}) * N * (self.coeff1{5} + g * self.coeff2{5} * gt)  ...
                  + (self.coeff2{6} * gt + gt * self.coeff1{6}) * N * (self.coeff1{6} + g * self.coeff2{6} * gt)  ...
@@ -201,7 +213,7 @@ classdef Ferromagnet < Metal
             dgt1 = dgt1 - ( eye(2) - gt1*g0 )*Nt0*( gt1 - gt0 )/self.interface_left  + (self.coeff2{7} * gt1 - gt1 * self.coeff1{7})/2;
             
             dg2  = dg2  - ( eye(2) - g2*gt3 )*N3*(  g2  - g3  )/self.interface_right + (self.coeff1{7} * g2  - g2  * self.coeff2{7})/2;
-            dgt2 = dgt2 - ( eye(2) - gt2*g3 )*Nt3*( gt2 - gt3 )/self.interface_right + (self.coeff1{7} * g2  - g2  * self.coeff2{7})/2;
+            dgt2 = dgt2 - ( eye(2) - gt2*g3 )*Nt3*( gt2 - gt3 )/self.interface_right + (self.coeff2{7} * gt2 - gt2 * self.coeff1{7})/2;
             
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);

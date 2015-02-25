@@ -83,12 +83,10 @@ classdef Metal < handle
             % the functions 'jacobian' and 'boundary' when solving equations.
             
             % Coefficients in the equations for the Riccati parameter gamma
-            self.coeff1{1} = -2;
-            self.coeff1{2} = -2i/self.thouless;
+            self.coeff1{1} = -2i/self.thouless;
             
             % Coefficients in the equations for the Riccati parameter gamma~
-            self.coeff2{1} = -2;
-            self.coeff2{2} = -2i/self.thouless;
+            self.coeff2{1} = -2i/self.thouless;
         end
         
         function update_boundary_left(self, other)
@@ -147,9 +145,9 @@ classdef Metal < handle
                     
                     % Small time delay to prevent the interpreter from getting sluggish or killed by the system
                     pause(self.delay);
-                    end
                 end
-            %end
+             %end
+          end
         
         
         function update(self)
@@ -176,7 +174,7 @@ classdef Metal < handle
             % and progress, if the 'debug' flag is set to 'true'.
             
             if self.debug
-                fprintf(':: %s\n', sprintf(varargin{:}));
+                fprintf(':: %s: %s\n', class(self), sprintf(varargin{:}));
             end
         end
 
@@ -201,7 +199,7 @@ classdef Metal < handle
             dos = zeros(length(self.energies), 1);
             for m=1:length(self.energies)
                 for n=1:length(self.positions)
-                    dos(m) = dos(m) + self.states(n,m).eval_ldos;
+                    dos(m) = dos(m) + self.states(n,m).eval_ldos/length(self.positions);
                 end
             end
             
@@ -254,8 +252,8 @@ classdef Metal < handle
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the metal
-            d2g  = self.coeff1{1} * dg*Nt*gt*dg + self.coeff1{2} * energy*g;
-            d2gt = self.coeff2{1} * dgt*N*g*dgt + self.coeff2{2} * energy*gt;
+            d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * energy*g;
+            d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * energy*gt;
             
             % Pack the results into a state vector
             dydx = State.pack(dg,d2g,dgt,d2gt);

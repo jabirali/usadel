@@ -85,14 +85,12 @@ classdef Superconductor < Metal
             % the functions 'jacobian' and 'boundary' when solving equations.
             
             % Coefficients in the equations for the Riccati parameter gamma
-            self.coeff1{1} = -2;
-            self.coeff1{2} = -2i/self.thouless;
-            self.coeff1{3} = SpinVector.Pauli.y/self.thouless;
+            self.coeff1{1} = -2i/self.thouless;
+            self.coeff1{2} = SpinVector.Pauli.y/self.thouless;
             
             % Coefficients in the equations for the Riccati parameter gamma~
-            self.coeff2{1} = -2;
-            self.coeff2{2} = -2i/self.thouless;
-            self.coeff2{3} = -SpinVector.Pauli.y/self.thouless;
+            self.coeff2{1} =  self.coeff1{1};
+            self.coeff2{2} = -self.coeff1{2};
         end
 
         function update(self)
@@ -136,13 +134,11 @@ classdef Superconductor < Metal
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equations in the superconductor
-            d2g  = self.coeff1{1} * dg*Nt*gt*dg                     ...
-                 + self.coeff1{2} * energy*g                        ...
-                 + gap * (self.coeff1{3} + g*self.coeff2{3}*g);
+            d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * energy*g         ...
+                 + gap * (self.coeff1{2} + g*self.coeff2{2}*g);
              
-            d2gt = self.coeff2{1} * dgt*N*g*dgt                     ...
-                 + self.coeff2{2} * energy*gt                       ...
-                 + gap * (self.coeff2{3} + gt*self.coeff1{3}*gt);
+            d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * energy*gt        ...
+                 + gap * (self.coeff2{2} + gt*self.coeff1{2}*gt);
             
             % Pack the results into a state vector
             dydx = State.pack(dg,d2g,dgt,d2gt);
@@ -220,7 +216,8 @@ classdef Superconductor < Metal
         function result = Bulk(energy, gap)
             % This function takes as its input an energy and a superconducting gap,
             % and returns a State object with Riccati parametrized Green's functions
-            % that corresponds to a BCS superconductor bulk state.
+            % that corresponds to a BCS superconductor bulk state. We also
+            % include an infinitesimal triplet contribution.
             theta = atanh(gap/(energy+0.0001i));
             c     = cosh(theta);
             s     = sinh(theta);
