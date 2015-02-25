@@ -15,7 +15,7 @@ classdef Superconductor < Metal
 
         temperature = 0;       % Temperature of the system (relative to the critical temperature of a bulk superconductor)
         strength    = 1;       % Strength of the superconductor (the material constant N0V which appears in the gap equation)
-        gap         = @(x) 1;  % Superconducting gap as a function of position (relative to the zero-temperature gap of a bulk superconductor)
+        gap         = 1;       % Superconducting gap as a function of position (relative to the zero-temperature gap of a bulk superconductor)
         
     end
     
@@ -35,6 +35,9 @@ classdef Superconductor < Metal
 
             % Set the internal variables based on constructor arguments
             self.strength = strength;
+            
+            % Calculate the superconducting gap from the initial state
+            self.update_gap;
         end
 
         
@@ -46,11 +49,17 @@ classdef Superconductor < Metal
         function result = critical(self)
             % This function returns whether or not the system is above
             % critical temperature. The superconductor is considered
-            % critical if the superconducting gap is roughly zero at
-            % the center of the material.
+            % critical if the maximal superconducting gap is below a
+            % certain threshould value (1e-8).
             
-            result = ( abs(self.gap(mean(self.positions))) < 1e-8 );
+            result = ( abs(self.max_gap) < 1e-8 );
         end        
+        
+        function result = max_gap(self)
+            % This function returns the maximal superconducting gap.
+            
+            result = max(abs(self.gap.Values));
+        end
         
         function plot_gap(self)
             % Plot the superconducting gap as a function of position
@@ -218,7 +227,7 @@ classdef Superconductor < Metal
             % and returns a State object with Riccati parametrized Green's functions
             % that corresponds to a BCS superconductor bulk state. We also
             % include an infinitesimal triplet contribution.
-            theta = atanh(gap/(energy+0.0001i));
+            theta = atanh(gap/(energy+1e-16i));
             c     = cosh(theta);
             s     = sinh(theta);
             

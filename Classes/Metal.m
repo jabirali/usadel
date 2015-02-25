@@ -31,9 +31,9 @@ classdef Metal < handle
         coeff2  = {};                        % Coefficients in the differential equations for gamma~
         
         % Properties that determine the simulation behavior
-        error_abs = 1e-2;                    % Maximum absolute error when simulating
-        error_rel = 1e-2;                    % Maximum relative error when simulating
-        grid_size = 1024;                    % Maximum grid size to use in simulations
+        error_abs = 1e-6;                    % Maximum absolute error when simulating
+        error_rel = 1e-6;                    % Maximum relative error when simulating
+        grid_size = 2048;                    % Maximum grid size to use in simulations
         
         % Properties that determine the behaviour of the program
         debug         = true;                % Whether to show intermediate results or not
@@ -124,7 +124,7 @@ classdef Metal < handle
             %spmd
                 for m=drange(1:length(self.energies))
                     % Progress information
-                    self.print('[ %2.f / %2.f ]  E = %2.4f ', m, length(self.energies), self.energies(m));
+                    self.print('[ %3.f / %3.f ]  E = %2.4f ', m, length(self.energies), self.energies(m));
                     
                     % Vectorize the current state of the system for the given
                     % energy, and use it as an initial guess for the solution
