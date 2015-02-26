@@ -28,8 +28,7 @@ for n=1:length(temperatures)
     % Increase the superconductor temperature, and update the gap and state
     s.temperature = temperatures(n);
     s.update_gap;
-    s.update_state;
-    s.update_gap;
+    s.update;
     
     % Keep updating the internal state of the superconductor until the gap
     % converges (i.e. less than 1% change between iterations)
