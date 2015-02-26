@@ -216,7 +216,7 @@ classdef Superconductor < Metal
             % Perform a numerical integration of the interpolation up to
             % the Debye cutoff. The Debye cutoff has been calculated from
             % the superconductor strength using eq. (3.34) in Tinkham.
-            gap = -self.strength * integral(kernel, 0, sinh(inv(self.strength)));
+            gap = self.strength * integral(kernel, 0, sinh(inv(self.strength)));
         end
         
         function result = Bulk(energy, gap)

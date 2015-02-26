@@ -25,9 +25,11 @@ for n=1:length(temperatures)
     % Status information
     fprintf('\n:: PROGRAM:        [ %3d / %3d ]  T = %.6f, gap = %.6f\n\n',  n, length(temperatures), temperatures(n), gap);
 
-    % Increase the superconductor temperature, and update the state once
+    % Increase the superconductor temperature, and update the gap and state
     s.temperature = temperatures(n);
-    s.update;
+    s.update_gap;
+    s.update_state;
+    s.update_gap;
     
     % Keep updating the internal state of the superconductor until the gap
     % converges (i.e. less than 1% change between iterations)
