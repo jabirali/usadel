@@ -41,7 +41,7 @@ classdef Ferromagnet < Metal
             for n=1:length(positions)
                 for m=1:length(energies)
                     self.states(n,m).g  = self.states(n,m).g  + 1e-10i;
-                    self.states(n,m).gt = self.states(n,m).gt - 1e-10i;
+                    self.states(n,m).gt = self.states(n,m).gt + 1e-10i;
                 end
             end
         end

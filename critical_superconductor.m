@@ -32,7 +32,7 @@ for n=1:length(temperatures)
     
     % Keep updating the internal state of the superconductor until the gap
     % converges (i.e. less than 1% change between iterations)
-    while (abs(s.mean_gap/gap) > 1e-2) && ~s.critical
+    while (abs(1 - s.mean_gap/gap) > 1e-2) && ~s.critical
         % Status information
         fprintf('\n:: PROGRAM:        [ %3d / %3d ]  T = %.6f, gap = %.6f\n                   Gap changed by %.2f%%. Recalculating...\n\n',  n, length(temperatures), temperatures(n), s.mean_gap, 100*abs(1-s.mean_gap/gap));
             
