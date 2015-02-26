@@ -13,9 +13,9 @@ classdef Superconductor < Metal
         % Define the internal variables of the Superconductor class
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        temperature = 0;       % Temperature of the system (relative to the critical temperature of a bulk superconductor)
-        strength    = 1;       % Strength of the superconductor (the material constant N0V which appears in the gap equation)
-        gap         = 1;       % Superconducting gap as a function of position (relative to the zero-temperature gap of a bulk superconductor)
+        temperature = 0;                                % Temperature of the system (relative to the critical temperature of a bulk superconductor)
+        strength    = 1;                                % Strength of the superconductor (the material constant N0V which appears in the gap equation)
+        gap         = griddedInterpolant([0,1],[1,1]);  % Superconducting gap as a function of position (relative to the zero-temperature gap of a bulk superconductor)
         
     end
     
@@ -35,9 +35,6 @@ classdef Superconductor < Metal
 
             % Set the internal variables based on constructor arguments
             self.strength = strength;
-            
-            % Calculate the superconducting gap from the initial state
-            self.update_gap;
         end
 
         
@@ -50,15 +47,15 @@ classdef Superconductor < Metal
             % This function returns whether or not the system is above
             % critical temperature. The superconductor is considered
             % critical if the maximal superconducting gap is below a
-            % certain threshould value (1e-8).
+            % certain threshould value.
             
-            result = ( abs(self.max_gap) < 1e-8 );
+            result = ( abs(self.mean_gap) < 1e-4 );
         end        
         
-        function result = max_gap(self)
-            % This function returns the maximal superconducting gap.
+        function result = mean_gap(self)
+            % This function returns the mean superconducting gap.
             
-            result = max(abs(self.gap.Values));
+            result = mean(self.gap.Values);
         end
         
         function plot_gap(self)
