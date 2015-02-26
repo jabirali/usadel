@@ -96,11 +96,26 @@ classdef SpinVector
             lhs.z = lhs.z-rhs.z;
         end
         
-        function lhs = times(lhs, rhs)
+        function result = times(lhs, rhs)
             % This overloads the arraywise multiplication operator for spin vectors
-            lhs.x = lhs.x*rhs.x;
-            lhs.y = lhs.y*rhs.y;
-            lhs.z = lhs.z*rhs.z;
+            if isobject(lhs)
+                if isobject(rhs)
+                    lhs.x = lhs.x*rhs.x;
+                    lhs.y = lhs.y*rhs.y;
+                    lhs.z = lhs.z*rhs.z;
+                    result = lhs;
+                else
+                    lhs.x = lhs.x*rhs(1);
+                    lhs.y = lhs.y*rhs(2);
+                    lhs.z = lhs.z*rhs(3);
+                    result = lhs;
+                end
+            else
+                    rhs.x = lhs(1)*rhs.x;
+                    rhs.y = lhs(2)*rhs.y;
+                    rhs.z = lhs(3)*rhs.z;
+                    result = rhs;
+            end
         end
         
         function result = mtimes(lhs, rhs)

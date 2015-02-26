@@ -200,7 +200,7 @@ classdef Metal < handle
             end
             
             % Plot a cubic interpolation of the results
-            energies = linspace(0,self.energies(end), 100);
+            energies = linspace(self.energies(1), self.energies(end), 100);
             plot(energies, pchip(self.energies, dos, energies));
             xlabel('Energy');
             ylabel('Density of States');
@@ -248,8 +248,8 @@ classdef Metal < handle
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the metal
-            d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * energy*g;
-            d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * energy*gt;
+            d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * (energy+1e-3i)*g;
+            d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * (energy+1e-3i)*gt;
             
             % Pack the results into a state vector
             dydx = State.pack(dg,d2g,dgt,d2gt);

@@ -140,10 +140,10 @@ classdef Superconductor < Metal
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equations in the superconductor
-            d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * energy*g         ...
+            d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * (energy+1e-3i)*g ...
                  + gap * (self.coeff1{2} + g*self.coeff2{2}*g);
              
-            d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * energy*gt        ...
+            d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * (energy+1e-3i)*gt...
                  + gap * (self.coeff2{2} + gt*self.coeff1{2}*gt);
             
             % Pack the results into a state vector
@@ -216,7 +216,7 @@ classdef Superconductor < Metal
             % Perform a numerical integration of the interpolation up to
             % the Debye cutoff. The Debye cutoff has been calculated from
             % the superconductor strength using eq. (3.34) in Tinkham.
-            gap = -self.strength * integral(kernel, 0, sinh(inv(self.strength)));
+            gap = -self.strength * integral(kernel, self.energies(1), sqrt(1+sinh(inv(self.strength))^2));
         end
         
         function result = Bulk(energy, gap)
@@ -224,7 +224,7 @@ classdef Superconductor < Metal
             % and returns a State object with Riccati parametrized Green's functions
             % that corresponds to a BCS superconductor bulk state. We also
             % include an infinitesimal triplet contribution.
-            theta = atanh(gap/(energy+1e-16i));
+            theta = atanh(gap/(energy+1e-3i));
             c     = cosh(theta);
             s     = sinh(theta);
             
