@@ -121,7 +121,7 @@ classdef Metal < handle
             end
                 
             % Parallelize the loop over the energies of the system
-            %spmd
+            spmd
                 for m=drange(1:length(self.energies))
                     % Progress information
                     self.print('[ %3.f / %3.f ]  E = %2.4f ', m, length(self.energies), self.energies(m));
@@ -146,7 +146,7 @@ classdef Metal < handle
                     % Small time delay to prevent the interpreter from getting sluggish or killed by the system
                     pause(self.delay);
                 end
-             %end
+             end
           end
         
         
