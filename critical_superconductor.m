@@ -2,9 +2,9 @@
 
 % Define the simulation parameters
 output       = 'output/critical_superconductor/';
-positions    = linspace(0, 1, 32);
+positions    = linspace(0, 1, 100);
 temperatures = linspace(0, 1, 20);
-energies     = [linspace(1e-5, 1.5, 50) linspace(1.55,75,10)];
+energies     = [linspace(1e-5, 1.5, 48) linspace(1.55,75,12)];
 thouless     = 1/16;
 strength     = 0.2;
 
