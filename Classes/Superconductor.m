@@ -183,11 +183,11 @@ classdef Superconductor < Metal
             Nt3 = inv( eye(2) - gt3*g3 );
             
             % Calculate the deviation from the Kuprianov--Lukichev b.c.
-            dg1  = dg1  - ( eye(2) - g1*gt0 )*N0*(  g0  - g1  )/self.interface_left;
-            dgt1 = dgt1 - ( eye(2) - gt1*g0 )*Nt0*( gt0 - gt1 )/self.interface_left;
+            dg1  = dg1  - (1/self.interface_left)*( eye(2) - g1*gt0 )*N0*(  g0  - g1  );
+            dgt1 = dgt1 - (1/self.interface_left)*( eye(2) - gt1*g0 )*Nt0*( gt0 - gt1 );
             
-            dg2  = dg2  - ( eye(2) - g2*gt3 )*N3*(  g3  - g2  )/self.interface_right;
-            dgt2 = dgt2 - ( eye(2) - gt2*g3 )*Nt3*( gt3 - gt2 )/self.interface_right;
+            dg2  = dg2  - (1/self.interface_right)*( eye(2) - g2*gt3 )*N3*(  g3  - g2  );
+            dgt2 = dgt2 - (1/self.interface_right)*( eye(2) - gt2*g3 )*Nt3*( gt3 - gt2 );
             
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);
@@ -202,21 +202,24 @@ classdef Superconductor < Metal
             singlets = zeros(size(self.energies));
             index    = self.position_index(position);
             for m=1:length(self.energies)
-                singlets(m) = self.states(index,m).singlet;
+                singlets(m) = real(self.states(index,m).singlet);
             end
             
-            % Create a cubic interpolation of the numerical data above,
-            % multiplied by the tanh(E/2T) kernel in the gap equation.
-            % Using eq. (4.34) in Fossheim & Sudbø, we can rewrite the 
-            % argument of the hyperbolic tangent such that E is measured 
-            % relative to the zero-temperature gap, and T relative to Tc.
-            kernel = @(E) real(pchip(self.energies, singlets, E)) ...
-                       .* tanh(0.881939 * E/self.temperature);
+            % Create a cubic interpolation of the numerical data above
+            singlet = griddedInterpolant(self.energies, singlets, 'pchip');
+            
+            % This is the expression for the gap equation integrand. Using
+            % eq. (4.34) in Fossheim & Sudbø, we have rewritten the argument
+            % of tanh(E/2T) such that E is measured relative to the
+            % zero-temperature gap, while T is measured relative to Tc.
+            kernel = @(E) singlet(E) .* tanh(0.881939 * E/self.temperature);
                    
             % Perform a numerical integration of the interpolation up to
             % the Debye cutoff. The Debye cutoff has been calculated from
             % the superconductor strength using eq. (3.34) in Tinkham.
-            gap = -self.strength * integral(kernel, self.energies(1), sqrt(1+sinh(inv(self.strength))^2));
+            % The reason for cosh(1/N0V) instead of sinh(1/N0V), is that we
+            % integrate the quasiparticle energy and not the kinetic energy.
+            gap = self.strength * integral(kernel, self.energies(1), cosh(1/self.strength));
         end
         
         function result = Bulk(energy, gap)

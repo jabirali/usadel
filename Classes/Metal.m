@@ -218,9 +218,9 @@ classdef Metal < handle
             end
             
             % Plot cubic interpolations of the results
-            positions = linspace(0, self.positions(end), 100);
+            positions = linspace(self.positions(1), self.positions(end), 100);
             plot(positions, pchip(self.positions, singlet, positions), ...
-                positions, pchip(self.positions, triplet, positions));
+                 positions, pchip(self.positions, triplet, positions));
             xlabel('Relative position');
             ylabel('Distribution');
             legend('Singlet', 'Triplet');
@@ -288,11 +288,11 @@ classdef Metal < handle
             Nt3 = inv( eye(2) - gt3*g3 );
             
             % Calculate the deviation from the Kuprianov--Lukichev b.c.
-            dg1  = dg1  - ( eye(2) - g1*gt0 )*N0*(  g1  - g0  )/self.interface_left;
-            dgt1 = dgt1 - ( eye(2) - gt1*g0 )*Nt0*( gt1 - gt0 )/self.interface_left;
+            dg1  = dg1  - (1/self.interface_left)*( eye(2) - g1*gt0 )*N0*(  g1  - g0  );
+            dgt1 = dgt1 - (1/self.interface_left)*( eye(2) - gt1*g0 )*Nt0*( gt1 - gt0 );
             
-            dg2  = dg2  - ( eye(2) - g2*gt3 )*N3*(  g2  - g3  )/self.interface_right;
-            dgt2 = dgt2 - ( eye(2) - gt2*g3 )*Nt3*( gt2 - gt3 )/self.interface_right;
+            dg2  = dg2  - (1/self.interface_right)*( eye(2) - g2*gt3 )*N3*(  g2  - g3  );
+            dgt2 = dgt2 - (1/self.interface_right)*( eye(2) - gt2*g3 )*Nt3*( gt2 - gt3 );
             
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);
