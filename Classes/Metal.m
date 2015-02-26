@@ -1,12 +1,11 @@
 % This defines a data structure that describes the physical state of a
-% metal for a given range of positions and energies. The most demanding
-% calculations are parallellized using SPMD. The purpose of this class is
-% mainly to be used as a base class for more interesting material classes,
-% such as superconductors and ferromagnets.
+% metal for a given range of positions and energies. The purpose of this 
+% class is mainly to be used as a base class for more interesting material
+% classes, such as superconductors and ferromagnets.
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-23
-% Updated 2015-02-24
+% Updated 2015-02-26
 
 classdef Metal < handle
     properties (GetAccess=public, SetAccess=public)
@@ -120,34 +119,31 @@ classdef Metal < handle
                 bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
             end
                 
-            % Parallelize the loop over the energies of the system
-            %spmd
-                for m=drange(1:length(self.energies))
-                    % Progress information
-                    self.print('[ %3.f / %3.f ]  E = %2.4f ', m, length(self.energies), self.energies(m));
-                    
-                    % Vectorize the current state of the system for the given
-                    % energy, and use it as an initial guess for the solution
-                    current = zeros(16,length(self.positions));
-                    for n=1:length(self.positions)
-                        current(:,n) = self.states(n,m).vectorize;
-                    end
-                    initial = bvpinit(self.positions', current);
-                    
-                    % Solve the differential equation, and evaluate the
-                    % solution on the position vector of the metal
-                    solution = deval(bvp6c(jc{m},bc{m},initial,options), self.positions);
-
-                    % Update the current state of the system based on the solution
-                    for n=1:length(self.positions)
-                        self.states(n,m) = State(solution(:,n));
-                    end
-                    
-                    % Small time delay to prevent the interpreter from getting sluggish or killed by the system
-                    pause(self.delay);
+            for m=1:length(self.energies)
+                % Progress information
+                self.print('[ %3.f / %3.f ]  E = %2.4f ', m, length(self.energies), self.energies(m));
+                
+                % Vectorize the current state of the system for the given
+                % energy, and use it as an initial guess for the solution
+                current = zeros(16,length(self.positions));
+                for n=1:length(self.positions)
+                    current(:,n) = self.states(n,m).vectorize;
                 end
-             %end
-          end
+                initial = bvpinit(self.positions', current);
+                
+                % Solve the differential equation, and evaluate the
+                % solution on the position vector of the metal
+                solution = deval(bvp6c(jc{m},bc{m},initial,options), self.positions);
+                
+                % Update the current state of the system based on the solution
+                for n=1:length(self.positions)
+                    self.states(n,m) = State(solution(:,n));
+                end
+                
+                % Small time delay to prevent the interpreter from getting sluggish or killed by the system
+                pause(self.delay);
+            end
+        end
         
         
         function update(self)

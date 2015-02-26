@@ -6,7 +6,7 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Inspired by a similar program written by Sol Jacobsen
 % Created 2015-02-16
-% Updated 2015-02-19
+% Updated 2015-02-26
 
 classdef Ferromagnet < Metal
     properties (GetAccess=public, SetAccess=public)
@@ -40,11 +40,11 @@ classdef Ferromagnet < Metal
             % improve the convergence of the differential equation solver
             for n=1:length(positions)
                 for m=1:length(energies)
-                    triplet = (-1e-32 * exchange(1)) * SpinVector.Pauli.z  ...
-                            + (1e-32i * exchange(2)) * eye(2)              ...
-                            + (1e-32  * exchange(3)) * SpinVector.Pauli.x;
-                   self.states(n,m).g  = self.states(n,m).g  + triplet;
-                   self.states(n,m).gt = self.states(n,m).gt - triplet;
+%                     triplet = (-1e-100 * exchange(1)) * SpinVector.Pauli.z  ...
+%                             + (1e-100i * exchange(2)) * eye(2)              ...
+%                             + (1e-100  * exchange(3)) * SpinVector.Pauli.x;
+                   self.states(n,m).g  = self.states(n,m).g;
+                   self.states(n,m).gt = self.states(n,m).gt;
                 end
             end
         end

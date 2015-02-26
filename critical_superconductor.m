@@ -3,10 +3,10 @@
 % Define the simulation parameters
 output       = 'output/critical_superconductor/';
 positions    = linspace(0, 1, 100);
-temperatures = linspace(0, 1, 20);
+temperatures = linspace(0, 2, 20);
 energies     = [linspace(1e-5, 1.5, 48) linspace(1.55,75,12)];
-thouless     = 1/16;
-strength     = 0.2;
+thouless     = 1/100;
+strength     = 0.3;
 
 % Create a superconductor based on the parameters above
 s = Superconductor(positions, energies, thouless, strength);

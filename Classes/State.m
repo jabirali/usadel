@@ -112,7 +112,7 @@ classdef State
             % This method returns the short-range triplet component
             % (along the exchange-field provided as an argument)
             unitvec = exchange/norm(exchange);
-            result  = dot(self.triplet,unitvec) .* unitvec;
+            result  = dot(unitvec,self.triplet) .* unitvec;
         end
 
         function result = lrtc(self, exchange)

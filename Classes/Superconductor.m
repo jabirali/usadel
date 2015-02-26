@@ -5,7 +5,7 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Inspired by a similar program written by Sol Jacobsen
 % Created 2015-02-15
-% Updated 2015-02-24
+% Updated 2015-02-26
 
 classdef Superconductor < Metal
     properties (GetAccess=public, SetAccess=public)
