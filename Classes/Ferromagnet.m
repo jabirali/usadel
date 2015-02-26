@@ -36,12 +36,15 @@ classdef Ferromagnet < Metal
             self.exchange  = exchange;
             self.spinorbit = spinorbit;
             
-            % Add an infinitesimal triplet to the initial state in order to
+            % Add a triplet contribution to the initial state in order to
             % improve the convergence of the differential equation solver
             for n=1:length(positions)
                 for m=1:length(energies)
-                    self.states(n,m).g  = self.states(n,m).g  + 1e-10i;
-                    self.states(n,m).gt = self.states(n,m).gt + 1e-10i;
+                    triplet = (-1e-6 * exchange(1)) * SpinVector.Pauli.z ...
+                            + (1e-6i * exchange(2)) * eye(2)             ...
+                            + (1e-6  * exchange(3)) * SpinVector.Pauli.x;
+                   self.states(n,m).g  = self.states(n,m).g  + triplet;
+                   self.states(n,m).gt = self.states(n,m).gt - triplet;
                 end
             end
         end
