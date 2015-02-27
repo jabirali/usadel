@@ -230,9 +230,10 @@ classdef Superconductor < Metal
             theta = atanh(gap/(energy+1e-3i));
             c     = cosh(theta);
             s     = sinh(theta);
+            g     = s/(1+c);
             
-            result = State([0,  s/(1+c); -s/(1+c), 0], 0, ...
-                           [0, -s/(1+c);  s/(1+c), 0], 0);
+            result = State([0,  g; -g, 0], 0, ...
+                           [0, -g;  g, 0], 0);
         end
     end
 end

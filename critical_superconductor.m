@@ -1,12 +1,14 @@
 % This script calculates the superconducting gap as a function of temperature.
 
+% Define the physical parameters
+thouless     = 1/100;
+strength     = 0.2;
+
 % Define the simulation parameters
 output       = 'output/critical_superconductor/';
 positions    = linspace(0, 1, 100);
 temperatures = linspace(0, 2, 20);
-energies     = [linspace(1e-5, 1.5, 48) linspace(1.55,75,12)];
-thouless     = 1/100;
-strength     = 0.3;
+energies     = [linspace(1e-16, 1.5, 128) linspace(1.501, cosh(1/strength), 128)];
 
 % Create a superconductor based on the parameters above
 s = Superconductor(positions, energies, thouless, strength);

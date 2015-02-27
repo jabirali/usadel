@@ -87,7 +87,7 @@ classdef State
         
         function f = eval_f(self)
             % Return the anomalous Green's function matrix f (change from Riccati parametrization to normal Green's function)
-            f = 2 * ( eye(2) - self.g*self.gt ) \ self.g;
+            f = ( eye(2) - self.g*self.gt )  \ (2 * self.g);
         end
         
         function result = eval_ldos(self)
