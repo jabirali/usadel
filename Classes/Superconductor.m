@@ -92,7 +92,7 @@ classdef Superconductor < Metal
             
             % Coefficients in the equations for the Riccati parameter gamma
             self.coeff1{1} = -2i/self.thouless;
-            self.coeff1{2} = SpinVector.Pauli.y/self.thouless;
+            self.coeff1{2} = -SpinVector.Pauli.y/self.thouless;
             
             % Coefficients in the equations for the Riccati parameter gamma~
             self.coeff2{1} =  self.coeff1{1};

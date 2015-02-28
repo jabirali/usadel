@@ -7,8 +7,8 @@ strength     = 0.2;
 % Define the simulation parameters
 output       = 'output/critical_superconductor/';
 positions    = linspace(0, 1, 100);
-temperatures = linspace(0, 2, 20);
-energies     = [linspace(1e-16, 1.5, 128) linspace(1.501, cosh(1/strength), 128)];
+temperatures = linspace(0, 1.5, 30);
+energies     = [linspace(0, 1.5, 100), linspace(1.501, cosh(1/strength), 100)];
 
 % Create a superconductor based on the parameters above
 s = Superconductor(positions, energies, thouless, strength);
@@ -23,9 +23,10 @@ diary([output, 'log.txt']);
 gap  = 1;                          % Current superconducting gap
 gaps = zeros(size(temperatures));  % All the calculated gaps
 
+tic;
 for n=1:length(temperatures)    
     % Status information
-    fprintf('\n:: PROGRAM:        [ %3d / %3d ]  T = %.6f, gap = %.6f\n\n',  n, length(temperatures), temperatures(n), gap);
+    fprintf('\n:: PROGRAM:        [ %3d / %3d ]  [ Time: %2d min ]\n                   T = %.6f, gap = %.6f\n\n',  n, length(temperatures), floor(toc/60), temperatures(n), gap);
 
     % Increase the superconductor temperature, and update the gap and state
     s.temperature = temperatures(n);
@@ -36,7 +37,7 @@ for n=1:length(temperatures)
     % converges (i.e. less than 1% change between iterations)
     while (abs(1 - s.mean_gap/gap) > 1e-2) && ~s.critical
         % Status information
-        fprintf('\n:: PROGRAM:        [ %3d / %3d ]  T = %.6f, gap = %.6f\n                   Gap changed by %.2f%%. Recalculating...\n\n',  n, length(temperatures), temperatures(n), s.mean_gap, 100*abs(1-s.mean_gap/gap));
+        fprintf('\n:: PROGRAM:        [ %3d / %3d ]  [ Time: %2d min ]\n                   T = %.6f, gap = %.6f\n                   Gap changed by %.2f%%. Recalculating...\n\n',  n, length(temperatures), floor(toc/60), temperatures(n), s.mean_gap, 100*abs(1-s.mean_gap/gap));
             
         % Update the superconductor state
         gap = s.mean_gap;
