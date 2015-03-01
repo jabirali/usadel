@@ -84,7 +84,7 @@ for n=1:iterations
             s.update;
 
             % Status information
-            fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.mean_gap, 100*abs(1-s.mean_gap/gap));            
+            fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.mean_gap);            
         end
     end
     
