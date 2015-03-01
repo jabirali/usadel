@@ -64,9 +64,12 @@ for n=1:iterations
     
     % Set the current temperature to the average of the two previous values
     s.temperature = (upper+lower)/2;
-    
+   
     % Status information
     fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ]\n',  n, iterations, s.temperature, floor(toc/60));
+ 
+    % Make sure that the current gap corresponds to the state we loaded
+    s.update;
     
     % Update the internal state of the superconductor until the mean gap converges
     for m=1:iterations
