@@ -184,6 +184,17 @@ classdef Metal < handle
             index = find(abs(self.energies-energy) < 1e-8, 1, 'first');
         end
 
+        function backup = backup_save(self)
+            % Returns a backup of the state of the metal
+            backup = self.states(:,:);
+        end
+        
+        function backup_load(self, backup)
+            % Restores the state of the metal from a backup
+            % NB: Remember to run 'update' after a call to 'backup_load' to
+            %     make sure that the rest of the properties are consistent!
+            self.states(:,:) = backup;
+        end
         
                 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

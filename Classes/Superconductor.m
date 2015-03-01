@@ -106,6 +106,7 @@ classdef Superconductor < Metal
             % the superconductor.
             
             % Update the state
+            self.update_gap;
             self.update_coeff;
             self.update_state;
             self.update_gap;
