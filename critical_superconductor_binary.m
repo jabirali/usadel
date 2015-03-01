@@ -1,6 +1,5 @@
 
 
-sb = s.backup_save;
 
 % This script calculates the superconducting gap as a function of temperature.
 
@@ -16,6 +15,10 @@ energies     = [linspace(0,0.500,100) linspace(0.501,1.500,100) linspace(1.501,c
 
 % Create a superconductor based on the parameters above
 s = Superconductor(positions, energies, thouless, strength);
+
+% This variable is used to keep a backup of the last non-critical 
+% superconductor we had, which is used as an initial guess for the state
+sb = s.backup_save;
 
 % Create the output directory (if it doesn't already exist)
 mkdir(output);
