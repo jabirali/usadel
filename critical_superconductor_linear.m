@@ -5,13 +5,14 @@ thouless     = 1/100;
 strength     = 0.2;
 
 % Define the simulation parameters
-output       = 'output/critical_superconductor/';
-positions    = linspace(0, 1, 100);
-temperatures = linspace(0, 1.5, 30);
-energies     = [linspace(0, 1.5, 100), linspace(1.501, cosh(1/strength), 100)];
+output       = 'output/critical_superconductor_linear/';
+positions    = linspace(0, 1, 10);
+temperatures = linspace(0, 1.2, 30);
+energies     = [linspace(0,0.500,100) linspace(0.501,1.500,100), linspace(1.501,cosh(1/strength),100)];
 
 % Create a superconductor based on the parameters above
 s = Superconductor(positions, energies, thouless, strength);
+s.debug = false;
 
 % Create the output directory (if it doesn't already exist)
 mkdir(output);
@@ -26,7 +27,7 @@ gaps = zeros(size(temperatures));  % All the calculated gaps
 tic;
 for n=1:length(temperatures)    
     % Status information
-    fprintf('\n:: PROGRAM:        [ %3d / %3d ]  [ Time: %2d min ]\n                   T = %.6f, gap = %.6f\n\n',  n, length(temperatures), floor(toc/60), temperatures(n), gap);
+    fprintf('\n:: PROGRAM: [ %3d / %3d ] [ Time: %2d min ] [ T = %.6f ] [ gap = %.6f ]\n',  n, length(temperatures), floor(toc/60), temperatures(n), gap);
 
     % Increase the superconductor temperature, and update the gap and state
     s.temperature = temperatures(n);
@@ -37,7 +38,7 @@ for n=1:length(temperatures)
     % converges (i.e. less than 1% change between iterations)
     while (abs(1 - s.mean_gap/gap) > 1e-2) && ~s.critical
         % Status information
-        fprintf('\n:: PROGRAM:        [ %3d / %3d ]  [ Time: %2d min ]\n                   T = %.6f, gap = %.6f\n                   Gap changed by %.2f%%. Recalculating...\n\n',  n, length(temperatures), floor(toc/60), temperatures(n), s.mean_gap, 100*abs(1-s.mean_gap/gap));
+        fprintf('\n:: PROGRAM: [ %3d / %3d ] [ Time: %2d min ] [ T = %.6f ] [ gap = %.6f ]\n            Gap changed by %.2f%%. Recalculating...\n\n',  n, length(temperatures), floor(toc/60), temperatures(n), s.mean_gap, 100*abs(1-s.mean_gap/gap));
             
         % Update the superconductor state
         gap = s.mean_gap;
