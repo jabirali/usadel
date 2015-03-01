@@ -18,7 +18,7 @@ lower        = 0.00;           % Lower limit on the critical temperature
 % Define the simulation parameters
 output       = 'output/critical_superconductor_binary/';
 positions    = linspace(0, 1, 5);
-energies     = [linspace(0,0.500,100) linspace(0.501,1.500,100) linspace(1.501,cosh(1/strength),100)];
+energies     = [linspace(0.000,1.500,100) linspace(1.501,cosh(1/strength),100)];
 iterations   = 8;
 
 
@@ -66,18 +66,20 @@ for n=1:iterations
     s.temperature = (upper+lower)/2;
     
     % Status information
-    fprintf(':: PROGRAM: [ %3d / %3d ] [ T = %.6f ] [ Time: %2d min ]\n',  n, iterations, s.temperature, floor(toc/60));
+    fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ]\n',  n, iterations, s.temperature, floor(toc/60));
     
-    % Update the internal state of the superconductor until the mean gap
-    % converges, i.e. the value stabilizes within 1% fluctuations.
-    gap = inf;
-    while (abs(1 - s.mean_gap/gap) > 1e-2) && ~s.critical
-        % Update the superconductor state
-        gap = s.mean_gap;
-        s.update;
+    % Update the internal state of the superconductor until the mean gap converges
+    for m=1:iterations
+        if s.critical
+            break;
+        else
+            % Update the superconductor state
+            gap = s.mean_gap;
+            s.update;
 
-        % Status information
-        fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n            Gap changed by %.2f%%.\n',  n, iterations, s.temperature, floor(toc/60), s.mean_gap, 100*abs(1-s.mean_gap/gap));            
+            % Status information
+            fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n            Gap changed by %.2f%%.\n',  n, iterations, s.temperature, floor(toc/60), s.mean_gap, 100*abs(1-s.mean_gap/gap));            
+        end
     end
     
     % Store the current temperature and gap as results
