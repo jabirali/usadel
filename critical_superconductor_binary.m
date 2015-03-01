@@ -69,13 +69,13 @@ for n=1:iterations
     fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ]\n',  n, iterations, s.temperature, floor(toc/60));
  
     % Speed up convergence by exaggerating the temperature increase
-    s.temperature = s.temperature + 10*(upper-lower);
+    s.temperature = s.temperature + 20*(upper-lower);
     s.update;
-    s.temperature = s.temperature - 10*(upper-lower);
+    s.temperature = s.temperature - 20*(upper-lower);
     s.update;
     
     % Update the internal state of the superconductor until the mean gap converges
-    for m=1:10
+    for m=1:20
         if s.critical
             break;
         else
