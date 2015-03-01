@@ -93,9 +93,9 @@ for n=1:iterations
     % critical temperature. If not, update the lower one, and use the
     % current state as an initial guess from now on.
     if s.critical
-        upper = current;
+        upper = s.temperature;
     else
-        lower = current;
+        lower = s.temperature;
         sb    = s.backup_save;
     end
 end
