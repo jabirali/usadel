@@ -94,7 +94,7 @@ for n=1:iterations
             sb    = s.backup_save;
             break;
 
-        elseif (gaps(end) < 0.01)
+        elseif (gaps(end) < 0.005)
             % The gap is so small that we must have reached critical
             % temperature. Update upper estimate and terminate loop.
 
