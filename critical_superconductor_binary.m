@@ -18,7 +18,7 @@ lower        = 0.00;           % Lower limit on the critical temperature
 % Define the simulation parameters
 output       = 'output/critical_superconductor_binary/';
 positions    = linspace(0, 1, 5);
-energies     = [linspace(0.000,1.500,100) linspace(1.501,cosh(1/strength),100)];
+energies     = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/strength),100)];
 iterations   = 8;
 
 
@@ -119,15 +119,11 @@ end
 % upper and lower limits obtained by the above calculations
 critical_temperature = (upper+lower)/2;
 
+% Output the final result
+fprintf('Critical temperature: %.6f\n');
+
 % Save the results to file
-save([output, 'results.mat'], 'critical_temperature', 'temperatures', 'gaps');
+save([output, 'result.mat'], 'critical_temperature');
 
 % Disable the log from now
 diary off;
-
-% Plot the results
-%figure;
-%title('Plot of temperature vs. superconducting gap');
-%plot(temperatures, gaps);
-%xlabel('Temperature');
-%ylabel('Superconducting gap');
