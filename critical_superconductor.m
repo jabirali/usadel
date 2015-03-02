@@ -2,7 +2,10 @@
 % by performing a binary search for the temperature where the gap vanishes
 % numerically. The result should be numerically one in the given unit
 % system, so this script can be used to calibrate simulation parameters.
-
+%
+% Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
+% Created 2015-02-28
+% Updated 2015-03-02
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,10 +123,10 @@ end
 critical_temperature = (upper+lower)/2;
 
 % Output the final result
-fprintf('Critical temperature: %.6f\n');
+fprintf('Critical temperature: %.6f\nLower limit: %.6f\nUpper limit: %.6f\n:', critical_temperature, lower, upper);
 
 % Save the results to file
-save([output, 'result.mat'], 'critical_temperature');
+save([output, 'result.mat'], 'critical_temperature', 'upper', 'lower');
 
 % Disable the log from now
 diary off;
