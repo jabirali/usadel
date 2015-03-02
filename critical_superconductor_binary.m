@@ -44,10 +44,16 @@ s.delay = 0;
 s.debug = 0;
 s.plot  = 0;
 
+% Speed up convergence by exaggerating the intial temperature change a bit
+s.temperature = s.temperature + 10*(upper-lower);
+s.update;
+s.temperature = s.temperature - 10*(upper-lower);
+s.update;
+
 % This variable is used to keep a backup of the last non-critical object
 sb = s.backup_save;
-
-
+    
+    
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %          PERFORM A BINARY SEARCH FOR THE CRITICAL TEMPERATURE
@@ -64,14 +70,8 @@ for n=1:iterations
     % Status information
     fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ]\n',  n, iterations, s.temperature, floor(toc/60));
     
-    % Speed up convergence by exaggerating the temperature change a bit
-    s.temperature = s.temperature + 10*(upper-lower);
-    s.update;
-    s.temperature = s.temperature - 10*(upper-lower);
-    s.update;
-    
-    % Keep updating the internal state of the superconductor until either
-    % one of the two end conditions are satisfied.
+    % Keep updating the internal state of the superconductor until we reach
+    % one of the end conditions (see below)
     gaps = [1];
     while true
         % Update the superconductor state
