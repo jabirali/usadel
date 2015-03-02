@@ -13,9 +13,6 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     %                 DEFINE PARAMETERS FOR THE SIMULATION
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    % Where to store the program log file and results
-    output        = ['output/critical_bilayer', datestr(now, '/dd-mm-yy_HH:MM:ss/')];
-    
     % Vectors of positions and energies that will be used in the simulation
     positions     = linspace(0, 1, 16);
     energies      = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/strength),100)];
@@ -38,12 +35,10 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     % Make sure that all required classes and methods are in the current path
     initialize;
 
-    % Create the output directory (if it doesn't already exist)
-    mkdir(output);
-
-    % Log the program output to a file
-    diary([output, 'log.txt']);
-
+    % Where to store the program log file
+    mkdir 'output';
+    diary(datestr(now, 'output/dd-mm-yy_HH-MM-ss.log'));
+    
     % Instantiate and initialize superconductor/ferromagnet objects
     s = Superconductor(positions, energies, 1/superconductor_length^2, strength);
     f = Ferromagnet(positions, energies, 1/ferromagnet_length^2, exchange, spinorbit);
@@ -173,9 +168,6 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
 
     % Output the final result
     fprintf('Critical temperature: %.6f\nLower limit: %.6f\nUpper limit: %.6f\n:', critical_temperature, lower, upper);
-
-    % Save the results to file
-    save([output, 'result.mat'], 'critical_temperature', 'upper', 'lower');
 
     % Disable the log from now
     diary off;
