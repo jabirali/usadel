@@ -14,8 +14,8 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Where to store the program log file and results
-    output        = ['output/critical_bilayer/', datestr(now),'/'];
-
+    output        = ['output/critical_bilayer', datestr(now, '/dd-mm-yy_HH:MM:ss/')];
+    
     % Vectors of positions and energies that will be used in the simulation
     positions     = linspace(0, 1, 16);
     energies      = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/strength),100)];
