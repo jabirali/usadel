@@ -8,7 +8,7 @@
 
 
 
-function critical_bilayer(superconductor_length, ferromagnet_length, strength, exchange, spinorbit)
+function critical_bilayer(superconductor_length, ferromagnet_length, strength, exchange, spinorbit, angle)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                 DEFINE PARAMETERS FOR THE SIMULATION
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,7 +41,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     
     % Instantiate and initialize superconductor/ferromagnet objects
     s = Superconductor(positions, energies, 1/superconductor_length^2, strength);
-    f = Ferromagnet(positions, energies, 1/ferromagnet_length^2, exchange, spinorbit);
+    f = Ferromagnet(positions, energies, 1/ferromagnet_length^2, exchange, SpinVector.RashbaDresselhaus(spinorbit, angle));
     
     s.temperature     = 0;
     s.interface_right = 3;
