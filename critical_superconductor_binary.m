@@ -75,8 +75,8 @@ for n=1:iterations
     gaps = [1];
     while true
         % Update the superconductor state
-        gaps(end+1) = s.mean_gap;
         s.update;
+        gaps(end+1) = s.mean_gap;
         
         % Status information
         fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.mean_gap);
