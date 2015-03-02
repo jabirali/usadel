@@ -9,15 +9,15 @@
 
 
 function critical_bilayer(superconductor_length, ferromagnet_length, strength, exchange, spinorbit)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                 DEFINE PARAMETERS FOR THE SIMULATION
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Where to store the program log file and results
-    output        = 'output/critical_bilayer/';
+    output        = ['output/critical_bilayer/', datestr(now),'/'];
 
     % Vectors of positions and energies that will be used in the simulation
-    positions     = linspace(0, 1, 5);
+    positions     = linspace(0, 1, 16);
     energies      = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/strength),100)];
 
     % Number of iterations of the binary search to perform
@@ -28,7 +28,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
 
     % Upper and lower limits for the binary search
     lower = 0;
-    upper = 1.5;
+    upper = 1;
 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,20 +52,32 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     s.interface_right = 3;
     f.interface_left  = 3;
 
-    % Make sure that all debugging options are disabled
+    % This enables or disables various debugging options
     s.delay = 0;
-    s.debug = 0;
-    s.plot  = 1;
+    s.debug = 1;
+    s.plot  = 0;
     f.delay = 0;
-    f.debug = 0;
-    f.plot  = 1;
+    f.debug = 1;
+    f.plot  = 0;
+    
+    % Print out parameters for verification purposes
+    fprintf('SUPERCONDUCTOR:\n :: Thouless energy: %1.6f\n :: Interface:       %1.6f\n :: Strength:        %1.6f\n\n', s.thouless, s.interface_right, s.strength);
+    fprintf('FERROMAGNET:\n :: Thouless energy: %1.6f\n :: Interface:       %1.6f\n :: Exchange field h:\n', f.thouless, f.interface_left);
+    disp(f.exchange);
+    fprintf(' :: Spin-orbit field Ax:\n')
+    disp(f.spinorbit.x);
+    fprintf(' :: Spin-orbit field Ay:\n')
+    disp(f.spinorbit.y);
+    fprintf(' :: Spin-orbit field Az:\n')
+    disp(f.spinorbit.z);
+
     
     % Initialize the bilayer by performing 'stabilization' iterations at
     % zero temperature, to make sure that we get a proximity effect
     tic;
     for n=1:stabilization
         % Status information
-        fprintf('[ %3d / %3d ] [ Temp: %2d min ] [ Time: %2d min ] Initializing state...\n',  n, stabilization, s.temperature, floor(toc/60));
+        fprintf(':: [ %3d / %3d ] [ Temp: %2d min ] [ Time: %2d min ] Initializing state...\n',  n, stabilization, s.temperature, floor(toc/60));
         
         % Update the boundary condition and state of the ferromagnet
         f.update_boundary_left(s);
@@ -79,8 +91,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     % This variable is used to keep a backup of the last non-critical object
     sb = s.backup_save;
     fb = f.backup_save;
-
-
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %          PERFORM A BINARY SEARCH FOR THE CRITICAL TEMPERATURE
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,7 +106,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
         gaps = [ 1 ];
         while true
             % If too many iterations have passed without convergence, then
-            % proceed to accelerate the convergence
+            % proceed to accelerate the convergence by reducing the gap
             loop = loop + 1;
             if rem(loop,stabilization) == 0
                 % Status information
@@ -106,7 +117,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
             end
 
             % Status information
-            fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.gap_mean);
+            fprintf(':: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.gap_mean);
 
             % Update the ferromagnet boundary conditions and state
             f.update_boundary_left(s);
@@ -143,7 +154,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
 
             else
                 % If the superconductor is not critical, then use the current
-                % state as an initial guess in the next simulation.
+                % state as an initial guess in future simulations.
 
                 sb = s.backup_save;
                 fb = f.backup_save;
