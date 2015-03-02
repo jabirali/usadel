@@ -72,7 +72,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     tic;
     for n=1:stabilization
         % Status information
-        fprintf(':: [ %3d / %3d ] [ Temp: %2d min ] [ Time: %2d min ] Initializing state...\n',  n, stabilization, s.temperature, floor(toc/60));
+        fprintf('[ %3d / %3d ] [ Temp: %2d min ] [ Time: %2d min ] Initializing state...\n',  n, stabilization, s.temperature, floor(toc/60));
         
         % Update the boundary condition and state of the ferromagnet
         f.update_boundary_left(s);
@@ -112,7 +112,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
             end
 
             % Status information
-            fprintf(':: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.gap_mean);
+            fprintf('[ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.gap_mean);
 
             % Update the ferromagnet boundary conditions and state
             f.update_boundary_left(s);
