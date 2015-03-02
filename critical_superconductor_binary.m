@@ -44,12 +44,6 @@ s.delay = 0;
 s.debug = 0;
 s.plot  = 0;
 
-% Speed up convergence by exaggerating the intial temperature change a bit
-s.temperature = s.temperature + 10*(upper-lower);
-s.update;
-s.temperature = s.temperature - 10*(upper-lower);
-s.update;
-
 % This variable is used to keep a backup of the last non-critical object
 sb = s.backup_save;
     
@@ -67,22 +61,31 @@ for n=1:iterations
     % Set the current temperature to the average of the two previous values
     s.temperature = (upper+lower)/2;
     
-    % Status information
-    fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ]\n',  n, iterations, s.temperature, floor(toc/60));
-    
-    % Keep updating the internal state of the superconductor until we reach
-    % one of the end conditions (see below)
+    % Keep updating the internal state of the superconductor until we
+    % either reach a phase transition, or the gap starts to increase
+    loop = 0;
     gaps = [1];
     while true
-        % Update the superconductor state
-        s.update;
-        gaps(end+1) = s.mean_gap;
+        % If too many iterations have passed without convergence, then
+        % proceed to accelerate the convergence
+        loop = loop + 1;
+        if rem(loop,6) == 0
+            % Status information
+            fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] Accelerating...\n',  n, iterations, s.temperature, floor(toc/60));
+            
+            % Reduce the superconducting gap everywhere in the system
+            s.gap_reduce;
+        end
         
         % Status information
-        fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.mean_gap);
+        fprintf(':: PROGRAM: [ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.gap_mean);
+                
+        % Update the superconductor state
+        s.update;
+        gaps(end+1) = s.gap_mean;
         
         if (gaps(end)-gaps(end-1)) > 0
-            % The gap is increasing with each iteration, so we must be
+            % The gap increased during the last iteration, so we must be
             % below the critical temperature. Updating the lower estimate, 
             % and using the current state as an initial guess in the next 
             % simulation. Then terminate the loop.
@@ -93,9 +96,16 @@ for n=1:iterations
 
         elseif (gaps(end) < 0.01)
             % The gap is so small that we must have reached critical
-            % temperature. Update the upper estimate and terminate loop.
+            % temperature. Update upper estimate and terminate loop.
+
             upper = s.temperature;
             break;
+            
+        else
+            % If the superconductor is not critical, then use the current
+            % state as an initial guess in the next simulation.
+            
+            sb = s.backup_save;
         end
     end
 end
@@ -116,8 +126,8 @@ save([output, 'results.mat'], 'critical_temperature', 'temperatures', 'gaps');
 diary off;
 
 % Plot the results
-figure;
-title('Plot of temperature vs. superconducting gap');
-plot(temperatures, gaps);
-xlabel('Temperature');
-ylabel('Superconducting gap');
+%figure;
+%title('Plot of temperature vs. superconducting gap');
+%plot(temperatures, gaps);
+%xlabel('Temperature');
+%ylabel('Superconducting gap');

@@ -39,17 +39,17 @@ for n=1:length(temperatures)
     
     % Keep updating the internal state of the superconductor until the gap
     % converges (i.e. less than 0.1% change between iterations)
-    while (abs(gap - s.mean_gap) > 1e-3) && (abs(gap) > 1e-3)
+    while (abs(gap - s.gap_mean) > 1e-3) && (abs(gap) > 1e-3)
         % Status information
-        fprintf('\n:: PROGRAM: [ %3d / %3d ] [ Time: %2d min ] [ T = %.6f ] [ gap = %.6f ]\n            Gap changed by %.2f%%. Recalculating...\n',  n, length(temperatures), floor(toc/60), temperatures(n), s.mean_gap, 100*abs(1-s.mean_gap/gap));
+        fprintf('\n:: PROGRAM: [ %3d / %3d ] [ Time: %2d min ] [ T = %.6f ] [ gap = %.6f ]\n            Gap changed by %.2f%%. Recalculating...\n',  n, length(temperatures), floor(toc/60), temperatures(n), s.gap_mean, 100*abs(1-s.gap_mean/gap));
             
         % Update the superconductor state
-        gap = s.mean_gap;
+        gap = s.gap_mean;
         s.update;
     end
     
     % Store the current result in the vector 'gaps'
-    gaps(n) = s.mean_gap;
+    gaps(n) = s.gap_mean;
 end
 
 % Save the results to file

@@ -43,16 +43,31 @@ classdef Superconductor < Metal
         % Define methods which are useful for working with superconductors
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function result = critical(self)
-            % This function returns whether or not the system is above
-            % critical temperature. The superconductor is considered
-            % critical if the maximal superconducting gap is below a
-            % certain threshould value.
+        function gap_reduce(self)
+            % This function reduces the current value of the superconducting
+            % gap everywhere in the material. (This can be useful for
+            % accelerating the convergence of programs that search
+            % for the critical temperature of a hybrid system.)
             
-            result = ( abs(self.mean_gap) < 1e-4 );
+            self.gap.Values = self.gap.Values./2;
+            self.update_coeff;
+            self.update_state;
+            self.update_gap;
         end        
         
-        function result = mean_gap(self)
+        function result = gap_left(self)
+            % This function returns the left superconducting gap.
+            
+            result = self.gap.Values(1);
+        end
+
+        function result = gap_right(self)
+            % This function returns the right superconducting gap.
+            
+            result = self.gap.Values(end);
+        end
+
+        function result = gap_mean(self)
             % This function returns the mean superconducting gap.
             
             result = mean(self.gap.Values);
