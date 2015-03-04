@@ -14,7 +14,7 @@ classdef Superconductor < Metal
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         temperature = 0;                                % Temperature of the system (relative to the critical temperature of a bulk superconductor)
-        strength    = 1;                                % Strength of the superconductor (the material constant N0V which appears in the gap equation)
+        strength    = 0.2;                              % Strength of the superconductor (the material constant N0V which appears in the gap equation)
         gap         = griddedInterpolant([0,1],[1,1]);  % Superconducting gap as a function of position (relative to the zero-temperature gap of a bulk superconductor)
         
     end
@@ -58,19 +58,31 @@ classdef Superconductor < Metal
         function result = gap_left(self)
             % This function returns the left superconducting gap.
             
-            result = self.gap.Values(1);
+            result = abs(self.gap.Values(1));
         end
 
         function result = gap_right(self)
             % This function returns the right superconducting gap.
             
-            result = self.gap.Values(end);
+            result = abs(self.gap.Values(end));
         end
 
         function result = gap_mean(self)
             % This function returns the mean superconducting gap.
             
-            result = mean(self.gap.Values);
+            result = mean(abs(self.gap.Values));
+        end
+        
+        function result = gap_max(self)
+            % This function returns the maximal superconducting gap.
+            
+            result = max(abs(self.gap.Values));
+        end
+        
+        function result = gap_min(self)
+            % This function returns the minimal superconducting gap.
+            
+            result = min(abs(self.gap.Values));
         end
         
         function plot_gap(self)
@@ -91,7 +103,7 @@ classdef Superconductor < Metal
             % This function updates the gap function, which contains the 
             % current estimate of the superconducting gap in the material.
             
-            % Calculate the gap at the positions in the system
+            % Calculate the gap at every position in the system
             gaps = [];
             for n=1:length(self.positions)
                 gaps(n) = self.calculate_gap(self, self.positions(n));
@@ -118,7 +130,7 @@ classdef Superconductor < Metal
             % This function updates the internal state of the superconductor
             % by calling the other update methods. Always run this after
             % updating the boundary conditions or physical properties of
-            % the superconductor.
+            % the superconductor, or after restoring from a backup.
             
             % Update the state
             self.update_gap;
@@ -239,10 +251,9 @@ classdef Superconductor < Metal
         end
         
         function result = Bulk(energy, gap)
-            % This function takes as its input an energy and a superconducting gap,
-            % and returns a State object with Riccati parametrized Green's functions
-            % that corresponds to a BCS superconductor bulk state. We also
-            % include an infinitesimal triplet contribution.
+            % This function takes as its input an energy and a superconducting
+            % gap, and returns a State object with Riccati parametrized Green's
+            % functions that correspond to a BCS superconductor bulk state.
             theta = atanh(gap/(energy+1e-3i));
             c     = cosh(theta);
             s     = sinh(theta);

@@ -1,10 +1,10 @@
 % This script calculates the critical temperature of a superconductor/ferromagnet
-% bilayer with spin-orbit coupling, by performing a binary search for the 
-% temperature where the superconducting gap vanishes numerically. 
+% bilayer with spin-orbit coupling, by performing a kind of binary search for
+% the temperature where the superconducting gap vanishes numerically. 
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-03-01
-% Updated 2015-03-02
+% Updated 2015-03-04
 
 
 
@@ -14,7 +14,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Vectors of positions and energies that will be used in the simulation
-    positions     = linspace(0, 1, 50);
+    positions     = linspace(0, 1, 100);
     energies      = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/strength),100)];
 
     % Number of iterations of the binary search to perform
@@ -27,17 +27,18 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     lower = 0;
     upper = 1;
 
+    % Filename where results will be stored
+    output = 'critical_bilayer.dat';
+
+
+
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                   PREPARATIONS FOR THE SIMULATION
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Make sure that all required classes and methods are in the current path
     initialize;
-
-    % Where to store the program log file
-    mkdir 'output';
-    diary(datestr(now, 'output/dd-mm-yy_HH-MM-ss.log'));
     
     % Instantiate and initialize superconductor/ferromagnet objects
     s = Superconductor(positions, energies, 1/superconductor_length^2, strength);
@@ -56,8 +57,8 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     f.plot  = 0;
     
     % Print out parameters for verification purposes
-    fprintf('SUPERCONDUCTOR:\n :: Thouless energy: %1.6f\n :: Interface:       %1.6f\n :: Strength:        %1.6f\n\n', s.thouless, s.interface_right, s.strength);
-    fprintf('FERROMAGNET:\n :: Thouless energy: %1.6f\n :: Interface:       %1.6f\n :: Exchange field h:\n', f.thouless, f.interface_left);
+    fprintf('SUPERCONDUCTOR:\n :: Length:          %1.6f\n :: Thouless energy: %1.6f\n :: Interface:       %1.6f\n :: Strength:        %1.6f\n\n', superconductor_length, s.thouless, s.interface_right, s.strength);
+    fprintf('FERROMAGNET:\n :: Length:          %1.6f\n :: Thouless energy: %1.6f\n :: Interface:       %1.6f\n :: Exchange field h:\n', ferromagnet_length, f.thouless, f.interface_left);
     disp(f.exchange);
     fprintf(' :: Spin-orbit field Ax:\n')
     disp(f.spinorbit.x);
@@ -68,11 +69,11 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
 
     
     % Initialize the bilayer by performing 'stabilization' iterations at
-    % zero temperature, to make sure that we get a proximity effect
+    % zero temperature, to make sure that we do get the proximity effect
     tic;
     for n=1:stabilization
         % Status information
-        fprintf('[ %3d / %3d ] [ Temp: %2d min ] [ Time: %2d min ] Initializing state...\n',  n, stabilization, s.temperature, floor(toc/60));
+        fprintf('[ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] Initializing...\n',  n, stabilization, s.temperature, floor(toc/60));
         
         % Update the boundary condition and state of the ferromagnet
         f.update_boundary_left(s);
@@ -83,13 +84,13 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
         s.update;
     end
 
-    % This variable is used to keep a backup of the last non-critical object
+    % These variables are used to keep a backup of the last non-critical object
     sb = s.backup_save;
     fb = f.backup_save;
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %          PERFORM A BINARY SEARCH FOR THE CRITICAL TEMPERATURE
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     for n=1:iterations
         % Set the current temperature to the average of the two previous values
@@ -112,7 +113,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
             end
 
             % Status information
-            fprintf('[ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.gap_mean);
+            fprintf('[ %3d / %3d ] [ Temp: %.6f ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, s.temperature, floor(toc/60), s.gap_max);
 
             % Update the ferromagnet boundary conditions and state
             f.update_boundary_left(s);
@@ -137,10 +138,10 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
                 fb    = f.backup_save;
                 break;
 
-            elseif (gaps(end) < 0.005)
+            elseif (s.gap_max < 0.005)
                 % The gap is so small that we must have reached critical
                 % temperature. Update upper estimate, load a noncritical
-                % state from backup, and terminate loop.
+                % state from backup, and terminate the loop.
 
                 upper = s.temperature;
                 s.backup_load(sb);
@@ -158,9 +159,9 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     end
 
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %           SAVE RESULTS AND CLEAN UP AFTER THE SIMULATION
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % The final estimate of the critical temperature is the mean of the current
     % upper and lower limits obtained by the above calculations
@@ -169,6 +170,6 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     % Output the final result
     fprintf('Critical temperature: %.6f\nLower limit: %.6f\nUpper limit: %.6f\n:', critical_temperature, lower, upper);
 
-    % Disable the log from now
-    diary off;
+    % Save the results to file
+    save(output);
 end

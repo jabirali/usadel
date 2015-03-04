@@ -188,7 +188,7 @@ classdef SpinVector
         % constants are given in polar coordinates, so that the Rashba constant
         % is strength*sin(angle), and the Dresselhaus one strength*cos(angle).
         
-        % TODO: Add another argument to add SOC along z-axis.
+        % TODO: Add another argument which describes a SOC along the z-axis.
 
         % Define the Rashba--Dresselhaus SU(2) field
         result = SpinVector( strength*(cos(angle)*SpinVector.Pauli.x   ...

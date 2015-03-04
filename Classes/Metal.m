@@ -1,7 +1,7 @@
 % This defines a data structure that describes the physical state of a
 % metal for a given range of positions and energies. The purpose of this 
 % class is mainly to be used as a base class for more interesting material
-% classes, such as superconductors and ferromagnets.
+% classes, such as those that describe superconductors and ferromagnets.
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-23
@@ -58,7 +58,7 @@ classdef Metal < handle
             
             % Initialize the internal state to a bulk superconductor with
             % superconducting gap 1. This is useful as an initial guess
-            % when simulating strong proximity effects with energy units 
+            % when simulating strong proximity effects in energy units 
             % where the zero-temperature gap is normalized to unity.
             self.states(length(positions), length(energies)) = State;
             for i=1:length(positions)
@@ -95,7 +95,7 @@ classdef Metal < handle
         end
 
         function update_boundary_right(self, other)
-            % This function updates the boundary condition to the left
+            % This function updates the boundary condition to the right
             % based on the current state of another material.
             self.boundary_right(:) = other.states(1,:);
         end
@@ -103,14 +103,14 @@ classdef Metal < handle
         function update_state(self)
             % This function solves the Usadel equation numerically for the
             % given position and energy range, and updates the current
-            % stored state of the system.
+            % estimate for the state of the system.
             
             % Set the accuracy of the numerical solution
             options = bvpset('AbsTol',self.error_abs,'RelTol',self.error_rel,'Nmax',self.grid_size);
 
             % Partially evaluate the Jacobian matrix and boundary conditions
             % for the different material energies, and store the resulting 
-            % anonymous functions in a vector. These functions are passed on
+            % anonymous functions in an array. These functions are passed on
             % to bvp6c when solving the equations.
             jc = {};
             bc = {};
@@ -140,7 +140,7 @@ classdef Metal < handle
                     self.states(n,m) = State(solution(:,n));
                 end
                 
-                % Small time delay to prevent the interpreter from getting sluggish or killed by the system
+                % Time delay between iterations (reduces load on the system)
                 pause(self.delay);
             end
         end
@@ -154,7 +154,7 @@ classdef Metal < handle
             self.update_coeff;
             self.update_state;
                 
-            % Plot the current DOS
+            % Plot the current density of states (if 'plot' is set to true)
             if self.plot
                 self.plot_dos;
             end
@@ -167,7 +167,10 @@ classdef Metal < handle
         
         function print(self,varargin)
             % This function is used to print messages, such as debug info
-            % and progress, if the 'debug' flag is set to 'true'.
+            % and progress, if the 'debug' flag is set to 'true'. The
+            % message is preceded by the name of the class, which lets you
+            % distinguish the output of 'Metal' instances from the output
+            % of instances of daughter classes.
             
             if self.debug
                 fprintf(':: %s: %s\n', class(self), sprintf(varargin{:}));
@@ -202,7 +205,10 @@ classdef Metal < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function plot_dos(self)
-            % Calculate the density of states
+            % Calculate the density of states for the system.
+            % NB: This implementation only *adds* the contribution from
+            %     every energy, and does not perform a proper integral!
+
             dos = zeros(length(self.energies), 1);
             for m=1:length(self.energies)
                 for n=1:length(self.positions)
@@ -218,7 +224,10 @@ classdef Metal < handle
         end
         
         function plot_dist(self)
-            % Calculate the singlet and triplet distributions
+            % Calculate the singlet and triplet distributions.
+            % NB: This implementation only *adds* the contribution from
+            %     every energy, and does not perform a proper integral!
+
             singlet = zeros(length(self.positions), 1);
             triplet = zeros(length(self.positions), 1);
             for m=1:length(self.energies)

@@ -47,8 +47,7 @@ for h in ${exchange[@]}; do
 			# Execute the simulation script in the background
 			echo $(uname -n) $(date +'%H:%M:%S') "Starting simulation: h=${h}, a=${a}, d=${d}.";
 			{
-				echo matlab -nodisplay -r "critical_bilayer(1,${d},0.2,[${h},0,0],${a},pi/4)";
-				sleep 3;
+				matlab -nodisplay -r "critical_bilayer(1,${d},0.2,[${h},0,0],${a},pi/4)";
 		        } 1>output.log 2>error.log &
 
 			# Wait until activetasks < maxtasks before continuing the loop

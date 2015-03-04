@@ -34,19 +34,7 @@ classdef Ferromagnet < Metal
 
             % Set the internal variables based on constructor arguments
             self.exchange  = exchange;
-            self.spinorbit = spinorbit;
-            
-            % Add a triplet contribution to the initial state in order to
-            % improve the convergence of the differential equation solver
-            for n=1:length(positions)
-                for m=1:length(energies)
-%                     triplet = (-1e-100 * exchange(1)) * SpinVector.Pauli.z  ...
-%                             + (1e-100i * exchange(2)) * eye(2)              ...
-%                             + (1e-100  * exchange(3)) * SpinVector.Pauli.x;
-                   self.states(n,m).g  = self.states(n,m).g;
-                   self.states(n,m).gt = self.states(n,m).gt;
-                end
-            end
+            self.spinorbit = spinorbit;            
         end
         
 
@@ -55,8 +43,11 @@ classdef Ferromagnet < Metal
         % Define methods which are useful for working with ferromagnets
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
         
-        function plot_comps(self)
-            % Calculate the singlet and triplet distributions
+        function plot_dist(self)
+            % Calculate the singlet and triplet distributions.
+            % NB: This implementation only *adds* the contribution from
+            %     every energy, and does not perform a proper integral!
+
             singlet = zeros(length(self.positions), 1);
             triplet = zeros(length(self.positions), 1);
             srtc    = zeros(length(self.positions), 1);
@@ -78,7 +69,7 @@ classdef Ferromagnet < Metal
                      positions, pchip(self.positions, triplet, positions));
                 legend('Singlet', 'Triplet');
             else
-                % If there is an exchange field, distinguish SRT/LRT
+                % If there is an exchange field, do distinguish SRT/LRT
                 plot(positions, pchip(self.positions, singlet, positions),  ...
                      positions, pchip(self.positions, srtc,    positions),  ...
                      positions, pchip(self.positions, lrtc,    positions));
@@ -120,14 +111,14 @@ classdef Ferromagnet < Metal
         function update(self)
             % This function updates the internal state of the ferromagnet
             % by calling the other update methods. Always run this after
-            % updating the boundary conditions, exchange field, or
-            % spin-orbit field in the ferromagnet.
+            % updating the boundary conditions or fields in the ferromagnet,
+            % or after restoring from a backup.
             
             % Update the state
             self.update_coeff;
             self.update_state;
     
-            % Plot the current DOS
+            % Plot the current density of states, if 'plot' is set to 'true'
             if self.plot
                 self.plot_dos;
             end
