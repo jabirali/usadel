@@ -31,7 +31,7 @@ width=( 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.75 1.00 )
 # Perform the simulation
 ##################################################################
 
-# Launch the simulation script for each parameter defined above
+# Launch the simulation script once for each parameter defined above
 module load matlab
 for h in ${exchange[@]}; do
 	for a in ${spinorbit[@]}; do
@@ -44,10 +44,13 @@ for h in ${exchange[@]}; do
 			# Link the required scripts into the work directory
 			ln -st . "$PBS_O_WORKDIR/BVP" "$PBS_O_WORKDIR/Classes" "$PBS_O_WORKDIR/initialize.m" "$PBS_O_WORKDIR/critical_bilayer.m"
 
-			# Execute the launch script
-			echo $(uname -n) "Task starting: h=${h}, a=${a}, d=${d}."
-			echo matlab -nodisplay -r "critical_bilayer(1,${d},0.2,[${h},0,0],${a},pi/4)" 1>output.txt 2>error.txt &
-			echo $(uname -n) "Task complete: h=${h}, a=${a}, d=${d}."
+			# Execute the simulation script in the background
+			{
+				echo $(uname -n) "Simulation starting: h=${h}, a=${a}, d=${d}.";
+				echo matlab -nodisplay -r "critical_bilayer(1,${d},0.2,[${h},0,0],${a},pi/4)";
+				sleep 10;
+				echo $(uname -n) "Simulation complete: h=${h}, a=${a}, d=${d}.";
+		        } 1>output.log 2>error.log &
 
 			# Wait until activetasks < maxtasks before continuing the loop
   			activetasks=$(jobs | wc -l)
