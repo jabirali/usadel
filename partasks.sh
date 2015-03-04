@@ -45,11 +45,10 @@ for h in ${exchange[@]}; do
 			ln -st . "$PBS_O_WORKDIR/BVP" "$PBS_O_WORKDIR/Classes" "$PBS_O_WORKDIR/initialize.m" "$PBS_O_WORKDIR/critical_bilayer.m"
 
 			# Execute the simulation script in the background
+			echo $(uname -n) $(date +'%H:%M:%S') "Starting simulation: h=${h}, a=${a}, d=${d}.";
 			{
-				echo $(uname -n) "Simulation starting: h=${h}, a=${a}, d=${d}.";
 				echo matlab -nodisplay -r "critical_bilayer(1,${d},0.2,[${h},0,0],${a},pi/4)";
-				sleep 10;
-				echo $(uname -n) "Simulation complete: h=${h}, a=${a}, d=${d}.";
+				sleep 3;
 		        } 1>output.log 2>error.log &
 
 			# Wait until activetasks < maxtasks before continuing the loop
