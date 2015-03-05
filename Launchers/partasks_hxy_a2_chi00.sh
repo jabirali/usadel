@@ -39,7 +39,7 @@ commands=( 'critical_bilayer(1, 0.2, 0.2, [ 0.00000 -1.00000 0 ], 2, 0)'
 module load matlab
 for n in $(seq 0 10); do
 	# Make a work directory for Matlab
-    	workdir="/work/$LOGNAME/matlab/$(basename -s .sh $0)/${n}"
+    	workdir="/work/$LOGNAME/matlab/hxy_a2_chi00/${n}"
     	mkdir -p "$workdir"
     	cd "$workdir"
 
