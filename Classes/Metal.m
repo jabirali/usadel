@@ -5,7 +5,7 @@
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-23
-% Updated 2015-02-29
+% Updated 2015-03-05
 
 classdef Metal < handle
     properties (GetAccess=public, SetAccess=public)
@@ -32,7 +32,7 @@ classdef Metal < handle
         % Properties that determine the simulation behavior
         error_abs = 1e-6;                    % Maximum absolute error when simulating
         error_rel = 1e-6;                    % Maximum relative error when simulating
-        grid_size = 2048;                    % Maximum grid size to use in simulations
+        grid_size = 32768;                   % Maximum grid size to use in simulations
         
         % Properties that determine the behaviour of the program
         debug         = true;                % Whether to show intermediate results or not

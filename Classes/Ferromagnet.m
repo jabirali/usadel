@@ -34,7 +34,7 @@ classdef Ferromagnet < Metal
 
             % Set the internal variables based on constructor arguments
             self.exchange  = exchange;
-            self.spinorbit = spinorbit;            
+            self.spinorbit = spinorbit;        
         end
         
 
