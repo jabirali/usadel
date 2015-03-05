@@ -11,7 +11,7 @@ function simulate_ferromagnet(ferromagnet_length, exchange, spinorbit, angle)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Vectors of positions and energies that will be used in the simulation
-    positions     = linspace(0, 1, 100);
+    positions     = linspace(0, 1, 32);
     energies      = linspace(0, 2, 100);
 
     % Filename where results will be stored
@@ -26,7 +26,12 @@ function simulate_ferromagnet(ferromagnet_length, exchange, spinorbit, angle)
 
     % Create a ferromagnet based on the parameters above
     f = Ferromagnet(positions, energies, 1/ferromagnet_length^2, exchange, SpinVector.RashbaDresselhaus(spinorbit, angle));
-    
+
+    % This enables or disables various debugging options
+    f.delay = 0;
+    f.debug = 1;
+    f.plot  = 0;
+
     % Set the boundary conditions for the ferromagnet (i.e. connect it to a bulk superconductor)
     f.interface_left = 1;
     for m=1:length(f.energies)
