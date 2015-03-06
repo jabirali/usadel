@@ -14,7 +14,7 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Vectors of positions and energies that will be used in the simulation
-    positions     = linspace(0, 1, 200);
+    positions     = linspace(0, 1, 150);
     energies      = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/strength),100)];
 
     % Number of iterations of the binary search to perform

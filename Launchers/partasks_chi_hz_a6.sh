@@ -19,17 +19,17 @@ maxtasks=11
 ##################################################################
 # Set the simulation parameters
 ##################################################################
-commands=( 'critical_bilayer(1, 0.2, 0.2, [ 00.0000 -10.0000 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 03.0902 -09.5106 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 05.8779 -08.0902 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 08.0902 -05.8779 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 09.5106 -03.0902 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10.0000  00.0000 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 09.5106  03.0902 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 08.0902  05.8779 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 05.8779  08.0902 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 03.0902  09.5106 0 ], 2, pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 00.0000  10.0000 0 ], 2, pi/4)' )
+commands=( 'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6, -1.57080)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6, -1.25664)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6, -0.94248)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6, -0.62832)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6, -0.31416)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6,  0.00000)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6,  0.31416)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6,  0.62832)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6,  0.94248)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6,  1.25664)'
+           'critical_bilayer(1, 0.2, 0.2, [ 0 0 10 ], 6,  1.57080)' )
 
 ##################################################################
 # Perform the simulation
@@ -39,7 +39,7 @@ commands=( 'critical_bilayer(1, 0.2, 0.2, [ 00.0000 -10.0000 0 ], 2, pi/4)'
 module load matlab
 for n in $(seq 0 10); do
 	# Make a work directory for Matlab
-    	workdir="/work/$LOGNAME/matlab/hxy_a2_chi45/${n}"
+    	workdir="/work/$LOGNAME/matlab/chi_hz_a6/${n}"
     	mkdir -p "$workdir"
     	cd "$workdir"
 

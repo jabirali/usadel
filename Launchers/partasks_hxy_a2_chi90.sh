@@ -19,17 +19,17 @@ maxtasks=11
 ##################################################################
 # Set the simulation parameters
 ##################################################################
-commands=( 'critical_bilayer(1, 0.2, 0.2, [ 0.00000 -1.00000 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.30902 -0.95106 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.58779 -0.80902 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.80902 -0.58779 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.95106 -0.30902 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 1.00000  0.00000 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.95106  0.30902 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.80902  0.58779 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.58779  0.80902 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.30902  0.95106 0 ], 2, pi/2)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.00000  1.00000 0 ], 2, pi/2)' )
+commands=( 'critical_bilayer(1, 0.2, 0.2, [ 00.0000 -10.0000 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 03.0902 -09.5106 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 05.8779 -08.0902 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 08.0902 -05.8779 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 09.5106 -03.0902 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 10.0000  00.0000 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 09.5106  03.0902 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 08.0902  05.8779 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 05.8779  08.0902 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 03.0902  09.5106 0 ], 2, pi/2)'
+           'critical_bilayer(1, 0.2, 0.2, [ 00.0000  10.0000 0 ], 2, pi/2)' )
 
 ##################################################################
 # Perform the simulation
@@ -50,6 +50,7 @@ for n in $(seq 0 10); do
     	echo $(uname -n) $(date +'%H:%M:%S') "Starting simulation:"
 	echo "::  ${commands[n]}"
     	{
+		echo "${commands[n]}";
     		matlab -nodisplay -r "${commands[n]}";
     	} 1>output.log 2>error.log &
 
