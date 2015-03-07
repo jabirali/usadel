@@ -23,6 +23,7 @@ classdef Metal < handle
         % Properties that determine the physical characteristics of the system
         interface_left  = inf;               % Interface parameter zeta at the left boundary
         interface_right = inf;               % Interface parameter zeta at the right boundary
+        transparent     = false;             % Whether we should use transparent or Kuprianov-Lukichev boundary conditions
         thouless        = 1;                 % Thouless energy of the system
         
         % Properties that are used during simulations
@@ -116,7 +117,13 @@ classdef Metal < handle
             bc = {};
             for m=1:length(self.energies)
                 jc{m} = @(x,y) self.jacobian(self,x,y,self.energies(m));
-                bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
+                if self.transparent
+                    % If 'transparent' is true, use transparent b.c.
+                    bc{m} = @(a,b) self.transparency(self,a,b,self.energies(m));
+                else
+                    % Else, use Kuprianov-Lukichev b.c. instead
+                    bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
+                end
             end
                 
             for m=1:length(self.energies)
@@ -278,7 +285,8 @@ classdef Metal < handle
         function residue = boundary(self, y1, y2, energy)
             % This function takes a Metal object 'self', the position 'x',
             % the current state vector 'y', and an energy as inputs, and
-            % calculates the Kuprianov-Lukichev boundary conditions.
+            % calculates the Kuprianov-Lukichev boundary conditions. This
+            % function will be used as b.c. when 'transparent' is false.
             
             % State in the material to the left
             s0   = self.boundary_left(self.energy_index(energy));
@@ -316,6 +324,61 @@ classdef Metal < handle
             
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);
+        end
+        
+        function residue = transparency(self, y1, y2, energy)
+            % This function takes a Metal object 'self', the position 'x',
+            % the current state vector 'y', and an energy as inputs, and
+            % calculates the transparent boundary conditions. This function
+            % will be used as b.c. when 'transparent' is set to true. Note
+            % that if the interface parameters are infinite, we assume a
+            % vacuum interface, and therefore use the derivative boundary
+            % condition dg = 0 instead of the transparency condition.
+            
+            % State in the material to the left
+            s0   = self.boundary_left(self.energy_index(energy));
+            g0   = s0.g;
+            dg0  = s0.dg;
+            gt0  = s0.gt;
+            dgt0 = s0.dgt;
+            
+            % State at the left end of the material
+            [g1,dg1,gt1,dgt1] = State.unpack(y1);
+            
+            % State at the right end of the material
+            [g2,dg2,gt2,dgt2] = State.unpack(y2);
+            
+            % State in the material to the right
+            s3   = self.boundary_right(self.energy_index(energy));
+            g3   = s3.g;
+            dg3  = s3.dg;
+            gt3  = s3.gt;
+            dgt3 = s3.dgt;
+            
+            % Calculate the deviation from the boundary conditions. We use
+            % the derivative boundary condition dg = 0 when there is an
+            % infinite interface parameter (i.e. vacuum interface), and the
+            % transparent boundary condition g1 = g2/interface_param when
+            % there is a finite interface parameter.
+
+            if isinf(self.interface_left)
+                r1  = dg1;
+                rt1 = dgt1;
+            else
+                r1  = g1  - g0/self.interface_left;
+                rt1 = gt1 - gt0/self.interface_left;
+            end
+            
+            if isinf(self.interface_right)
+                r2  = dg2;
+                rt2 = dgt2;
+            else
+                r2  = g2  - g3/self.interface_right;
+                rt2 = gt2 - gt3/self.interface_right;
+            end
+            
+            % Vectorize the results of the calculations, and return it
+            residue = State.pack(r1,rt1,r2,rt2);
         end
     end
 end

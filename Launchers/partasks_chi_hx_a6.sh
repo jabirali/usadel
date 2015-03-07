@@ -11,7 +11,7 @@
 #PBS -A acc-fysikk
 #PBS -q default	
 #PBS -lnodes=1:ppn=12
-#PBS -lwalltime=800:00:00
+#PBS -lwalltime=150:00:00
 #PBS -lpmem=2000MB
 
 maxtasks=11

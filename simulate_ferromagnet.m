@@ -33,7 +33,9 @@ function simulate_ferromagnet(ferromagnet_length, exchange, spinorbit, angle)
     f.plot  = 0;
 
     % Set the boundary conditions for the ferromagnet (i.e. connect it to a bulk superconductor)
-    f.interface_left = 1;
+    %f.transparent = true;
+    f.interface_left  = 1;
+    f.interface_right = inf;
     for m=1:length(f.energies)
         f.boundary_left(m) = Superconductor.Bulk(f.energies(m), 1.0);
     end
