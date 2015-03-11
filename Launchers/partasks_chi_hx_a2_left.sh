@@ -38,7 +38,7 @@ commands=( 'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 2, -1.5208)'
 
 # Launch the simulation script once for each parameter defined above
 module load matlab
-for n in $(seq 11 22); do
+for n in $(seq 0 11); do
 	# Make a work directory for Matlab
     	workdir="/work/$LOGNAME/matlab/chi_hx_a2/${n}"
     	mkdir -p "$workdir"
