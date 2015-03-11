@@ -14,23 +14,21 @@
 #PBS -lwalltime=150:00:00
 #PBS -lpmem=2000MB
 
-maxtasks=12
+maxtasks=10
 
 ##################################################################
 # Set the simulation parameters
 ##################################################################
-commands=( 'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 1.5208)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 1.4708)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 1.5208)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.9354)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.8854)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.8354)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.7354)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.6854)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.6354)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.0500)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.1000)'
-           'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 0.1500)' )
+commands=( 'critical_bilayer(0.55, 0.1, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 0.2, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 0.3, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 0.4, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 0.5, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 0.6, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 0.7, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 0.8, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 0.9, 0.2, [ 10 0 0 ], 2, pi/4)'
+           'critical_bilayer(0.55, 1.0, 0.2, [ 10 0 0 ], 2, pi/4)' )
 
 ##################################################################
 # Perform the simulation
@@ -38,9 +36,9 @@ commands=( 'critical_bilayer(1, 0.2, 0.2, [ 10 0 0 ], 6, 1.5208)'
 
 # Launch the simulation script once for each parameter defined above
 module load matlab
-for n in $(seq 0 11); do
+for n in $(seq 0 9); do
 	# Make a work directory for Matlab
-    	workdir="/work/$LOGNAME/matlab/chi_hx_a6R/${n}"
+    	workdir="/work/$LOGNAME/matlab/df_hx_a2_short/${n}"
     	mkdir -p "$workdir"
     	cd "$workdir"
 
