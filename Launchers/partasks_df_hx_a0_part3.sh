@@ -19,19 +19,21 @@ maxtasks=12
 ##################################################################
 # Set the simulation parameters
 ##################################################################
- 
-commands=( 'critical_bilayer(1, 0.2, 0.2, [ 0.49979  -9.98750  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 6.32981  -7.74167  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 6.70882  -7.41564  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 7.07107  -7.07107  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 7.41564  -6.70882  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 7.74167  -6.32981  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 7.74167   6.32981  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 7.41564   6.70882  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 7.07107   7.07107  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 6.70882   7.41564  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 6.32981   7.74167  0 ], 2, -pi/4)'
-           'critical_bilayer(1, 0.2, 0.2, [ 0.49979   9.98750  0 ], 2, -pi/4)' )
+commands=( 'critical_bilayer(1, 0.52, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.55, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.57, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.62, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.65, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.67, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.72, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.75, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.77, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.82, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.85, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.87, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.92, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.95, 0.2, [ 10 0 0 ], 0, pi/4)'
+           'critical_bilayer(1, 0.97, 0.2, [ 10 0 0 ], 0, pi/4)' )
 
 ##################################################################
 # Perform the simulation
@@ -41,7 +43,7 @@ commands=( 'critical_bilayer(1, 0.2, 0.2, [ 0.49979  -9.98750  0 ], 2, -pi/4)'
 module load matlab
 for n in $(seq 0 11); do
 	# Make a work directory for Matlab
-    	workdir="/work/$LOGNAME/matlab/hxy_a2_chi45m_more/${n}"
+    	workdir="/work/$LOGNAME/matlab/df_hx_a0_part3/${n}"
     	mkdir -p "$workdir"
     	cd "$workdir"
 
