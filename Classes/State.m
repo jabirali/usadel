@@ -117,6 +117,13 @@ classdef State
             result = (f(1,2) - f(2,1))/2;
         end
         
+        function result = singlett(self)
+            % Calculate the singlet component of the t.c. Green's function 
+            % i.e. the component proportional to iσ^y.
+            f = self.eval_ft;
+            result = (f(1,2) - f(2,1))/2;
+        end
+        
         function result = triplet(self)
             % Calculate the triplet component of the Green's function,
             % i.e. the component proportional to [σ^x,σ^y,σ^z] iσ^y.

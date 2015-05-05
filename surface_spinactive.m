@@ -32,11 +32,11 @@ m.spinactive = true;
 
 m.interface_left      = 3;
 m.magnetization_left  = [0,0,1];
-m.boundary_left(1)    = Superconductor.Bulk(0,1);
+m.boundary_left(1)    = Superconductor.Bulk(0,1,0);
 
 m.interface_right     = 3;
 m.magnetization_right = [0,0,0];
-m.boundary_right(1)   = Superconductor.Bulk(0,1);
+m.boundary_right(1)   = Superconductor.Bulk(0,1,0);
 
 % This enables or disables various debugging options
 m.delay = 0;

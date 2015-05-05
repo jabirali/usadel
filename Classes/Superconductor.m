@@ -16,7 +16,8 @@ classdef Superconductor < Metal
         temperature = 0;                                % Temperature of the system (relative to the critical temperature of a bulk superconductor)
         strength    = 0.2;                              % Strength of the superconductor (the material constant N0V which appears in the gap equation)
         gap         = griddedInterpolant([0,1],[1,1]);  % Superconducting gap as a function of position (relative to the zero-temperature gap of a bulk superconductor)
-        
+        phase       = griddedInterpolant([0,1],[0,0]);  % Superconducting phase as a function of position (defaults to zero)
+        complex     = false;                            % Whether we use a gauge where the superconducting phase is zero
     end
     
     
@@ -85,6 +86,22 @@ classdef Superconductor < Metal
             result = min(abs(self.gap.Values));
         end
         
+        function phase_set(self, phase)
+            % This function sets the superconducting phase at all positions,
+            % and updates the internal state of the superconductor to a bulk
+            % material with the correct phase.
+            
+            % Set the superconducting phase
+            self.phase = griddedInterpolant([0,1],[phase,phase]);
+            
+            % Set the internal state to a bulk superconductor with a phase
+            for i=1:length(positions)
+                for j=1:length(energies)
+                    self.states(i,j) = Superconductor.Bulk(energies(j), 1, phase);
+                end
+            end
+        end
+        
         function plot_gap(self)
             % Plot the superconducting gap as a function of position
             xs = linspace(self.positions(1), self.positions(end));
@@ -93,6 +110,13 @@ classdef Superconductor < Metal
             ylabel('Superconducting gap');
         end        
 
+        function plot_phase(self)
+            % Plot the superconducting phase as a function of position
+            xs = linspace(self.positions(1), self.positions(end));
+            plot(xs, self.phase(xs));
+            xlabel('Relative position');
+            ylabel('Superconducting phase');
+        end
         
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -103,14 +127,16 @@ classdef Superconductor < Metal
             % This function updates the gap function, which contains the 
             % current estimate of the superconducting gap in the material.
             
-            % Calculate the gap at every position in the system
-            gaps = [];
+            % Calculate the gap and phase at every position in the system
+            gaps   = [];
+            phases = [];
             for n=1:length(self.positions)
-                gaps(n) = self.calculate_gap(self, self.positions(n));
+                [gaps(n),phases(n)] = self.calculate_gap(self, self.positions(n));
             end
             
             % Create a piecewise cubic interpolation of the results
-            self.gap = griddedInterpolant(self.positions, gaps, 'pchip');
+            self.gap   = griddedInterpolant(self.positions, gaps,   'pchip');
+            self.phase = griddedInterpolant(self.positions, phases, 'pchip');
         end
         
         function update_coeff(self)
@@ -161,6 +187,10 @@ classdef Superconductor < Metal
             
             % Retrieve the superconducting gap at this point
             gap = self.gap(x);
+            
+            % TODO: Include the effects of superconducting phase shifts.
+            %gapp = self.gap(x) * exp(+i*self.phase(x));
+            %gapm = self.gap(x) * exp(-i*self.phase(x));
             
             % Calculate the normalization matrices
             N  = inv( eye(2) - g*gt );
@@ -220,11 +250,26 @@ classdef Superconductor < Metal
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);
         end
+
+        function [gap,phase] = calculate_gap(self, position)
+            % This function returns a vector [gap,phase] with the
+            % superconducting gap and phase at the given position.
+            % This is done by invoking either 'calculate_gap_real'
+            % or 'calculate_gap_complex', depending on whether 
+            % the parameter 'complex' is true or false.
+            
+            if self.complex
+                    [gap,phase] = self.calculate_gap_complex(self, position);
+            else
+                    [gap,phase] = self.calculate_gap_real(self, position);
+            end
+        end
         
-        function gap = calculate_gap(self, position)
+        function [result_gap,result_phase] = calculate_gap_real(self, position)
             % This function extracts the singlet components of the Green's
             % function at a given position, and then uses the gap equation
             % to calculate the superconducting gap at that point.
+            % [This version works for purely real values of the gap.]
             
             % Extract the singlet components from the states
             singlets = zeros(size(self.energies));
@@ -247,13 +292,57 @@ classdef Superconductor < Metal
             % the superconductor strength using eq. (3.34) in Tinkham.
             % The reason for cosh(1/N0V) instead of sinh(1/N0V), is that we
             % integrate the quasiparticle energy and not the kinetic energy.
-            gap = self.strength * integral(kernel, self.energies(1), cosh(1/self.strength));
+            result_gap   = self.strength * integral(kernel, self.energies(1), cosh(1/self.strength));
+            result_phase = 0;
         end
         
-        function result = Bulk(energy, gap)
+        
+        function [result_gap,result_phase] = calculate_gap_complex(self, position)
+            % This function uses the gap equation to calculate the super-
+            % conducting gap and superconducting phase at a given position.
+            % [This version works for general complex values of the gap.]
+            
+            % Calculate the singlet component of the anomalous Green's
+            % functions and its tilde conjugate, and then their difference.
+            index    = self.position_index(position);
+            singlets = zeros(size(self.energies));
+            for m=1:length(self.energies)
+                singlets(m) = (self.states(index,m).singlet - conj(self.states(index,m).singlett))/2;
+            end
+
+            % Create cubic interpolations of the numerical data above
+            singletR = griddedInterpolant(self.energies, real(singlets), 'pchip');
+            singletI = griddedInterpolant(self.energies, imag(singlets), 'pchip');
+            
+            % This is the expression for the gap equation integrand. Using
+            % eq. (4.34) in Fossheim & Sudbø, we have rewritten the argument
+            % of tanh(E/2T) such that E is measured relative to the
+            % zero-temperature gap, while T is measured relative to Tc.
+            kernelR = @(E) singletR(E) .* tanh(0.881939 * E/self.temperature);
+            kernelI = @(E) singletI(E) .* tanh(0.881939 * E/self.temperature);
+                   
+            % Perform a numerical integration of the interpolation up to
+            % the Debye cutoff. The Debye cutoff has been calculated from
+            % the superconductor strength using eq. (3.34) in Tinkham.
+            % The reason for cosh(1/N0V) instead of sinh(1/N0V), is that we
+            % integrate the quasiparticle energy and not the kinetic energy.
+            gapR = self.strength * integral(kernelR, self.energies(1), cosh(1/self.strength));
+            gapI = self.strength * integral(kernelI, self.energies(1), cosh(1/self.strength));
+         
+            % Extract the superconducting gap and phase from the results
+            result       = gapR + gapI;
+            result_gap   = norm(result);
+            result_phase = phase(result);
+        end
+        
+        function result = Bulk(energy, gap, phase)
             % This function takes as its input an energy and a superconducting
             % gap, and returns a State object with Riccati parametrized Green's
             % functions that correspond to a BCS superconductor bulk state.
+            
+            % TODO: Add a phase contribution to generalize the function
+            %       to complex values of the superconducting gap.
+            
             theta = atanh(gap/(energy+1e-3i));
             c     = cosh(theta);
             s     = sinh(theta);

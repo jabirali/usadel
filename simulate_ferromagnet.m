@@ -37,7 +37,7 @@ function simulate_ferromagnet(ferromagnet_length, exchange, spinorbit, angle)
     f.interface_left  = 1;
     f.interface_right = inf;
     for m=1:length(f.energies)
-        f.boundary_left(m) = Superconductor.Bulk(f.energies(m), 1.0);
+        f.boundary_left(m) = Superconductor.Bulk(f.energies(m), 1.0, 0);
     end
 
     % Update the internal state of the ferromagnet

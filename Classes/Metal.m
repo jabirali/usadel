@@ -42,7 +42,7 @@ classdef Metal < handle
         % Properties that determine the simulation behavior
         error_abs = 1e-6;                    % Maximum absolute error when simulating
         error_rel = 1e-6;                    % Maximum relative error when simulating
-        grid_size = 8192;                    % Maximum grid size to use in simulations
+        grid_size = 32768;                   % Maximum grid size to use in simulations
         
         % Properties that determine the behaviour of the program
         debug = true;                        % Whether to show intermediate results or not
@@ -73,7 +73,7 @@ classdef Metal < handle
             self.states(length(positions), length(energies)) = State;
             for i=1:length(positions)
                 for j=1:length(energies)
-                    self.states(i,j) = Superconductor.Bulk(energies(j), 1);
+                    self.states(i,j) = Superconductor.Bulk(energies(j), 1, 0);
                 end
             end
             
