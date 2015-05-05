@@ -5,7 +5,7 @@
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Inspired by a similar program written by Sol Jacobsen
 % Created 2015-02-15
-% Updated 2015-02-28
+% Updated 2015-05-05
 
 classdef Superconductor < Metal
     properties (GetAccess=public, SetAccess=public)
@@ -95,9 +95,9 @@ classdef Superconductor < Metal
             self.phase = griddedInterpolant([0,1],[phase,phase]);
             
             % Set the internal state to a bulk superconductor with a phase
-            for i=1:length(positions)
-                for j=1:length(energies)
-                    self.states(i,j) = Superconductor.Bulk(energies(j), 1, phase);
+            for i=1:length(self.positions)
+                for j=1:length(self.energies)
+                    self.states(i,j) = Superconductor.Bulk(self.energies(j), 1, phase);
                 end
             end
         end
@@ -113,9 +113,14 @@ classdef Superconductor < Metal
         function plot_phase(self)
             % Plot the superconducting phase as a function of position
             xs = linspace(self.positions(1), self.positions(end));
-            plot(xs, self.phase(xs));
+            plot(xs, self.phase(xs)/pi);
+
+            axis([0 1 -1 1]);
+            set(gca, 'XTick', [0,1/4,1/2,3/4,1]);
+            set(gca, 'YTick', [-1,-1/2,0,1/2,1]);
+
             xlabel('Relative position');
-            ylabel('Superconducting phase');
+            ylabel('Superconducting phase (\pi)');
         end
         
         
@@ -128,8 +133,8 @@ classdef Superconductor < Metal
             % current estimate of the superconducting gap in the material.
             
             % Calculate the gap and phase at every position in the system
-            gaps   = [];
-            phases = [];
+            gaps   = zeros(1,length(self.positions));
+            phases = zeros(1,length(self.positions));
             for n=1:length(self.positions)
                 [gaps(n),phases(n)] = self.calculate_gap(self, self.positions(n));
             end
@@ -330,7 +335,7 @@ classdef Superconductor < Metal
             gapI = self.strength * integral(kernelI, self.energies(1), cosh(1/self.strength));
          
             % Extract the superconducting gap and phase from the results
-            result       = gapR + gapI;
+            result       = gapR + 1i*gapI;
             result_gap   = norm(result);
             result_phase = phase(result);
         end
@@ -339,17 +344,14 @@ classdef Superconductor < Metal
             % This function takes as its input an energy and a superconducting
             % gap, and returns a State object with Riccati parametrized Green's
             % functions that correspond to a BCS superconductor bulk state.
-            
-            % TODO: Add a phase contribution to generalize the function
-            %       to complex values of the superconducting gap.
-            
+                        
             theta = atanh(gap/(energy+1e-3i));
             c     = cosh(theta);
             s     = sinh(theta);
             g     = s/(1+c);
             
-            result = State([0,  g; -g, 0], 0, ...
-                           [0, -g;  g, 0], 0);
+            result = State([0,  g; -g, 0]*exp( 1i*phase), 0, ...
+                           [0, -g;  g, 0]*exp(-1i*phase), 0);
         end
     end
 end
