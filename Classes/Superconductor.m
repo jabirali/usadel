@@ -18,6 +18,7 @@ classdef Superconductor < Metal
         gap         = griddedInterpolant([0,1],[1,1]);  % Superconducting gap as a function of position (relative to the zero-temperature gap of a bulk superconductor)
         phase       = griddedInterpolant([0,1],[0,0]);  % Superconducting phase as a function of position (defaults to zero)
         complex     = false;                            % Whether we use a gauge where the superconducting phase is zero
+        locked      = false;                            % Whether the superconducting gap and phase are locked to constant values or not
     end
     
     
@@ -30,6 +31,8 @@ classdef Superconductor < Metal
             % This method constructs a Superconductor instance from a vector
             % of positions, a vector of energies, the Thouless energy, and
             % the strength of the superconductivity (material constant N0V).
+            % Note: for self-consistent solutions to work properly, the energy
+            %       vector should extend up to the Debye cutoff cosh(1/N0V).
 
             % Initialize the Metal superclass
             self@Metal(positions, energies, thouless);
@@ -132,16 +135,18 @@ classdef Superconductor < Metal
             % This function updates the gap function, which contains the 
             % current estimate of the superconducting gap in the material.
             
-            % Calculate the gap and phase at every position in the system
-            gaps   = zeros(1,length(self.positions));
-            phases = zeros(1,length(self.positions));
-            for n=1:length(self.positions)
-                [gaps(n),phases(n)] = self.calculate_gap(self, self.positions(n));
-            end
+            if ~self.locked
+                % Calculate the gap and phase at every position in the system
+                gaps   = zeros(1,length(self.positions));
+                phases = zeros(1,length(self.positions));
+                for n=1:length(self.positions)
+                    [gaps(n),phases(n)] = self.calculate_gap(self, self.positions(n));
+                end
             
-            % Create a piecewise cubic interpolation of the results
-            self.gap   = griddedInterpolant(self.positions, gaps,   'pchip');
-            self.phase = griddedInterpolant(self.positions, phases, 'pchip');
+                % Create a piecewise cubic interpolation of the results
+                self.gap   = griddedInterpolant(self.positions, gaps,   'pchip');
+                self.phase = griddedInterpolant(self.positions, phases, 'pchip');
+            end
         end
         
         function update_coeff(self)
@@ -191,11 +196,8 @@ classdef Superconductor < Metal
             [g,dg,gt,dgt] = State.unpack(y);
             
             % Retrieve the superconducting gap at this point
-            gap = self.gap(x);
-            
-            % TODO: Include the effects of superconducting phase shifts.
-            %gapp = self.gap(x) * exp(+i*self.phase(x));
-            %gapm = self.gap(x) * exp(-i*self.phase(x));
+            gap  = self.gap(x) * exp(i*self.phase(x));
+            gapt = conj(gap);
             
             % Calculate the normalization matrices
             N  = inv( eye(2) - g*gt );
@@ -204,10 +206,10 @@ classdef Superconductor < Metal
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equations in the superconductor
             d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * (energy+1e-3i)*g ...
-                 + gap * (self.coeff1{2} + g*self.coeff2{2}*g);
+                 + gap * self.coeff1{2} + gapt * g*self.coeff2{2}*g;
              
             d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * (energy+1e-3i)*gt...
-                 + gap * (self.coeff2{2} + gt*self.coeff1{2}*gt);
+                 + gapt * self.coeff2{2} + gap * gt*self.coeff1{2}*gt;
             
             % Pack the results into a state vector
             dydx = State.pack(dg,d2g,dgt,d2gt);
