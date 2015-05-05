@@ -1,8 +1,8 @@
 % This script simulates the proximity effect in a normal metal connected
-% to two superconductors, where one interface is assumed to be spin-active. 
+% to two superconductors, where there is a phase difference between them. 
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Created 2015-05-05
+% Created 2015-05-06
 % Updated 2015-05-06
 
 
@@ -11,11 +11,13 @@
 %                 DEFINE PARAMETERS FOR THE SIMULATION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Vectors of positions that will be used in the simulation
-positions     = linspace(0, 1.0, 200);
+% Vectors of positions, energies, and phase differences for the simulation
+positions = linspace(0,    1.0, 100);
+energies  = linspace(-1.5, 1.5,  50);
+phasediff = linspace(0,    pi,   50);
 
 % Filename where results will be stored
-output = 'surface_spinactive.dat';
+output = 'surface_josephson.dat';
 
 
 
@@ -26,45 +28,41 @@ output = 'surface_spinactive.dat';
 % Make sure that all required classes and methods are in the current path
 initialize;
 
-% Create a metal with one spin-active interface and one regular interface
-m = Metal(positions, [0], 1/3^2);
-m.spinactive = true;
+% Create a superconductor and normal metal
+s = Superconductor([0], energies, 1, 0.2);
 
-m.interface_left      = 3;
-m.magnetization_left  = [0,0,1];
-m.boundary_left(1)    = Superconductor.Bulk(0,1,0);
-
-m.interface_right     = 3;
-m.magnetization_right = [0,0,0];
-m.boundary_right(1)   = Superconductor.Bulk(0,1,0);
+m = Metal(positions, energies, 1);
+m.interface_left = 3;
+m.interface_right = 3;
+m.update_boundary_left(s);
+m.update_boundary_right(s);
 
 % This enables or disables various debugging options
 m.delay = 0;
-m.debug = 0;
+m.debug = 1;
 m.plot  = 0;
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                      PERFORM THE SIMULATION
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Loop over polarizations and phaseshifts, and calculate the zero-energy
-% density of states at the superconductor/normal-metal interface
-density      = zeros(20,20);
-polarization = linspace(-1.0,1.0,20);
-phaseshift   = linspace(-1.0,1.0,20);
+% Loop over phase differences, and calculate the density of states
+density = zeros(length(energies),length(phasediff));
+for N=1:length(phasediff)
+    % Status update
+    fprintf('\nPhase difference: %3.4f\n', phasediff(N));
 
-for N=1:20
-    m.polarization_left = polarization(N);
-    for M=1:20
-        m.phaseshift_left = phaseshift(M);
-        fprintf('[ Polarization: %3.4f ] [ Phaseshift: %3.4f ]\n', polarization(N), phaseshift(M));
-        try
-            m.update;
-        end
-        
-        density(N,M) = m.states(1,1).eval_ldos;
+    % Update the phase difference and state
+    s.phase_set(phasediff(N));
+    m.update_boundary_right(s);
+    try
+        m.update;
+    end
+
+    % Extract the density of states
+    for M=1:length(energies)
+        density(M,N) = m.states(floor(length(positions)/2), M).eval_ldos;
     end
 end
 
@@ -78,8 +76,7 @@ end
 save(output);
 
 % Plot the resulting density of states as a function of polarization and phaseshift
-[X,Y] = meshgrid(polarization, phaseshift);
+[X,Y] = meshgrid(energies, phasediff);
 surf(X,Y,density,'FaceColor','red','EdgeColor','none');
 camlight('left');
 lighting('phong');
-
