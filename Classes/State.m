@@ -12,7 +12,7 @@
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-14
-% Updated 2015-02-24
+% Updated 2015-05-04
 
 
 classdef State
@@ -37,7 +37,7 @@ classdef State
             %  (i)   four 2x2 matrices, which should correspond to the
             %        matrices g, dg, gt, dgt, in that order;
             %  (ii)  one 16-element complex vector, which should be produced
-            %        by either the 'vectorize' metohd or the 'pack' method;
+            %        by either the 'vectorize' method or the 'pack' method;
             %  (iii) no arguments, i.e. the empty constructor.
             switch nargin
                 case 1
@@ -88,10 +88,22 @@ classdef State
             g = ( eye(2) - self.g*self.gt ) \ ( eye(2) + self.g*self.gt );
         end
         
+        function gt = eval_gt(self)
+            % Return the Green's function matrix g~, i.e. convert the
+            % Riccati parameter self.gt to a normal Green's function.
+            gt = ( eye(2) - self.gt*self.g ) \ ( eye(2) + self.gt*self.g );
+        end
+        
         function f = eval_f(self)
             % Return the anomalous Green's function matrix f, i.e. convert
             % the Riccati parameter self.g to a normal Green's function.
             f = ( eye(2) - self.g*self.gt )  \ (2 * self.g);
+        end
+        
+        function ft = eval_ft(self)
+            % Return the anomalous Green's function matrix f~, i.e. convert
+            % the Riccati parameter self.g to a normal Green's function.
+            ft = ( eye(2) - self.gt*self.g )  \ (2 * self.gt);
         end
         
         function result = eval_ldos(self)
@@ -118,7 +130,7 @@ classdef State
             % This method returns the short-range triplet component, i.e.
             % the triplet component *along* the exchange field, where the
             % exchange field should be provided as an argument.
-            unitvec = exchange/norm(exchange);
+            unitvec = exchange/(norm(exchange)+1e-16);
             result  = dot(unitvec,self.triplet) .* unitvec;
         end
 

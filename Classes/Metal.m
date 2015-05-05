@@ -5,7 +5,7 @@
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-23
-% Updated 2015-03-05
+% Updated 2015-05-04
 
 classdef Metal < handle
     properties (GetAccess=public, SetAccess=public)
@@ -23,22 +23,31 @@ classdef Metal < handle
         % Properties that determine the physical characteristics of the system
         interface_left  = inf;               % Interface parameter zeta at the left boundary
         interface_right = inf;               % Interface parameter zeta at the right boundary
-        transparent     = false;             % Whether we should use transparent or Kuprianov-Lukichev boundary conditions
+        transparent     = false;             % Whether we should use transparent boundary conditions
+        spinactive      = false;             % Whether we should use spin-active boundary conditions
         thouless        = 1;                 % Thouless energy of the system
         
-        % Properties that are used during simulations
+        % Properties that describe spin-active interfaces
+        magnetization_left  = [0,0,0];      % Magnetization vector at left interface  (unit vector)
+        magnetization_right = [0,0,0];      % Magnetization vector at right interface (unit vector)
+        polarization_left   = 0;            % Polarization at left interface  [-1,+1]
+        polarization_right  = 0;            % Polarization at right interface [-1,+1]
+        phaseshift_left     = 0;            % Spin-dependent phase-shift factor at left interface  [-inf,inf]
+        phaseshift_right    = 0;            % Spin-dependent phase-shift factor at right interface [-inf,inf]
+        
+        % Internal properties that will be set and used during simulations
         coeff1  = {};                        % Coefficients in the differential equations for gamma
         coeff2  = {};                        % Coefficients in the differential equations for gamma~
         
         % Properties that determine the simulation behavior
         error_abs = 1e-6;                    % Maximum absolute error when simulating
         error_rel = 1e-6;                    % Maximum relative error when simulating
-        grid_size = 32768;                   % Maximum grid size to use in simulations
+        grid_size = 8192;                    % Maximum grid size to use in simulations
         
         % Properties that determine the behaviour of the program
-        debug         = true;                % Whether to show intermediate results or not
-        plot          = true;                % Whether to plot intermediate results or not
-        delay         = 0;                   % How long to wait between program iterations
+        debug = true;                        % Whether to show intermediate results or not
+        plot  = true;                        % Whether to plot intermediate results or not
+        delay = 0;                           % How long to wait between program iterations
     end
     
     
@@ -81,23 +90,17 @@ classdef Metal < handle
         function update_coeff(self)
             % This function updates the vector of coefficients passed to
             % the functions 'jacobian' and 'boundary' when solving equations.
-            
-            % Coefficients in the equations for the Riccati parameter gamma
-            self.coeff1{1} = -2i/self.thouless;
-            
-            % Coefficients in the equations for the Riccati parameter gamma~
-            self.coeff2{1} = -2i/self.thouless;
         end
         
         function update_boundary_left(self, other)
             % This function updates the boundary condition to the left
-            % based on the current state of another material.
+            % based on the current state of an adjoining material.
             self.boundary_left(:) = other.states(end,:);
         end
 
         function update_boundary_right(self, other)
             % This function updates the boundary condition to the right
-            % based on the current state of another material.
+            % based on the current state of an adjoining material.
             self.boundary_right(:) = other.states(1,:);
         end
 
@@ -119,9 +122,12 @@ classdef Metal < handle
                 jc{m} = @(x,y) self.jacobian(self,x,y,self.energies(m));
                 if self.transparent
                     % If 'transparent' is true, use transparent b.c.
-                    bc{m} = @(a,b) self.transparency(self,a,b,self.energies(m));
+                    bc{m} = @(a,b) self.boundary_transparent(self,a,b,self.energies(m));
+                elseif self.spinactive
+                    % If 'spinactive' is true, use spin-active b.c.
+                    bc{m} = @(a,b) self.boundary_spinactive(self,a,b,self.energies(m));
                 else
-                    % Else, use Kuprianov-Lukichev b.c. instead
+                    % Else, use standard Kuprianov-Lukichev b.c. instead
                     bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
                 end
             end
@@ -275,8 +281,8 @@ classdef Metal < handle
             
             % Calculate the second derivatives of the Riccati parameters
             % according to the Usadel equation in the metal
-            d2g  = -2 * dg*Nt*gt*dg + self.coeff1{1} * (energy+1e-3i)*g;
-            d2gt = -2 * dgt*N*g*dgt + self.coeff2{1} * (energy+1e-3i)*gt;
+            d2g  = -2 * dg*Nt*gt*dg - (2i/self.thouless) * (energy+1e-3i)*g;
+            d2gt = -2 * dgt*N*g*dgt - (2i/self.thouless) * (energy+1e-3i)*gt;
             
             % Pack the results into a state vector
             dydx = State.pack(dg,d2g,dgt,d2gt);
@@ -325,8 +331,117 @@ classdef Metal < handle
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);
         end
+
+        function residue = boundary_spinactive(self, y1, y2, energy)
+            % This function takes a Metal object 'self', the position 'x',
+            % the current state vector 'y', and an energy as inputs, and
+            % calculates the spin-active version of the Kuprianov-Lukichev
+            % boundary conditions. This function will be used as b.c. when 
+            % the property 'spinactive' is set to 'true'.
+            
+            % State in the material to the left
+            s0   = self.boundary_left(self.energy_index(energy));
+            g0   = s0.g;
+            dg0  = s0.dg;
+            gt0  = s0.gt;
+            dgt0 = s0.dgt;
+            
+            % State at the left end of the material
+            [g1,dg1,gt1,dgt1] = State.unpack(y1);
+            
+            % State at the right end of the material
+            [g2,dg2,gt2,dgt2] = State.unpack(y2);
+            
+            % State in the material to the right
+            s3   = self.boundary_right(self.energy_index(energy));
+            g3   = s3.g;
+            dg3  = s3.dg;
+            gt3  = s3.gt;
+            dgt3 = s3.dgt;
+            
+            % Calculate the Green's functions
+            I = eye(2);
+            
+            G0  = (I - g0*gt0) \ (eye(2) + g0*gt0);
+            Gt0 = (I - gt0*g0) \ (eye(2) + gt0*g0);
+            F0  = (I - g0*gt0) \ (2*g0);
+            Ft0 = (I - gt0*g0) \ (2*gt0);
+            
+            G1  = (I - g1*gt1) \ (eye(2) + g1*gt1);
+            Gt1 = (I - gt1*g1) \ (eye(2) + gt1*g1);
+            F1  = (I - g1*gt1) \ (2*g1);
+            Ft1 = (I - gt1*g1) \ (2*gt1);
+
+            G2  = (I - g2*gt2) \ (eye(2) + g2*gt2);
+            Gt2 = (I - gt2*g2) \ (eye(2) + gt2*g2);
+            F2  = (I - g2*gt2) \ (2*g2);
+            Ft2 = (I - gt2*g2) \ (2*gt2);
+
+            G3  = (I - g3*gt3) \ (eye(2) + g3*gt3);
+            Gt3 = (I - gt3*g3) \ (eye(2) + gt3*g3);
+            F3  = (I - g3*gt3) \ (2*g3);
+            Ft3 = (I - gt3*g3) \ (2*gt3);
+            
+            % Calculate the interface parameters
+            LS = self.magnetization_left * SpinVector.Pauli;                                  % L: m·σ
+            LT = self.magnetization_left * conj(SpinVector.Pauli);                            % L: m·σ*
+            LM = self.polarization_left/(1 + sqrt(1-self.polarization_left^2));               % L: µ
+            LK = (1-sqrt(1-self.polarization_left^2))/(1+sqrt(1-self.polarization_left^2));   % L: κ
+            LL = 1i*self.phaseshift_left;                                                     % L: iλ
+            
+            RS = self.magnetization_right * SpinVector.Pauli;                                 % R: m·σ
+            RT = self.magnetization_right * conj(SpinVector.Pauli);                           % R: m·σ*
+            RM = self.polarization_right/(1 + sqrt(1-self.polarization_right^2));             % R: µ
+            RK = (1-sqrt(1-self.polarization_right^2))/(1+sqrt(1-self.polarization_right^2)); % R: κ
+            RL = 1i*self.phaseshift_right;                                                    % R: iλ
+
+            % Calculate the left interface matrices
+            L1  = (G1*G0 - F1*Ft0)*(I+LM*LS) - (I+LM*LS)*(G0*G1 - F0*Ft1)                        ...
+                + (G1*LS*G0 - F1*LT*Ft0)*(LM + LK*LS) - (LM + LK*LS)*(G0*LS*G1 - F0*LT*Ft1)      ...
+                + LL*(G1*LS - LS*G1);
+           
+            Lt1 = (Gt1*Gt0 - Ft1*F0)*(I+LM*LT) - (I+LM*LT)*(Gt0*Gt1 - Ft0*F1)                    ...
+                + (Gt1*LT*Gt0 - Ft1*LS*F0)*(LM + LK*LT) - (LM + LK*LT)*(Gt0*LT*Gt1 - Ft0*LS*F1)  ...
+                - LL*(Gt1*LT - LT*Gt1);
+            
+            L2  = (G1*F0 - F1*Gt0)*(I+LM*LT) - (I+LM*LS)*(G0*F1 - F0*Gt1)                        ...
+                + (G1*LS*F0 - F1*LT*Gt0)*(LM+LK*LT) - (LM+LK*LS)*(G0*LS*F1 - F0*LT*Gt1)          ...
+                + LL*(F1*LT - LS*F1);
+
+            Lt2 = (Gt1*Ft0 - Ft1*G0)*(I+LM*LS) - (I+LM*LT)*(Gt0*Ft1 - Ft0*G1)                    ...
+                + (Gt1*LT*Ft0 - Ft1*LS*G0)*(LM+LK*LS) - (LM+LK*LT)*(Gt0*LT*Ft1 - Ft0*LS*G1)      ...
+                - LL*(Ft1*LS - LT*Ft1);            
+            
+            % Calculate the right interface matrices
+            R1  = (G2*G3 - F2*Ft3)*(I+RM*RS) - (I+RM*RS)*(G3*G2 - F3*Ft2)                        ...
+                + (G2*RS*G3 - F2*RT*Ft3)*(RM + RK*RS) - (RM + RK*RS)*(G3*RS*G2 - F3*RT*Ft2)      ...
+                + RL*(G2*RS - RS*G2);
+           
+            Rt1 = (Gt2*Gt3 - Ft2*F3)*(I+RM*RT) - (I+RM*RT)*(Gt3*Gt2 - Ft3*F2)                    ...
+                + (Gt2*RT*Gt3 - Ft2*RS*F3)*(RM + RK*RT) - (RM + RK*RT)*(Gt3*RT*Gt2 - Ft3*RS*F2)  ...
+                - RL*(Gt2*RT - RT*Gt2);
+            
+            R2  = (G2*F3 - F2*Gt3)*(I+RM*RT) - (I+RM*RS)*(G3*F2 - F3*Gt2)                        ...
+                + (G2*RS*F3 - F2*RT*Gt3)*(RM+RK*RT) - (RM+RK*RS)*(G3*RS*F2 - F3*RT*Gt2)          ...
+                + RL*(F2*RT - RS*F2);
+
+            Rt2 = (Gt2*Ft3 - Ft2*G3)*(I+RM*RS) - (I+RM*RT)*(Gt3*Ft2 - Ft3*G2)                    ...
+                + (Gt2*RT*Ft3 - Ft2*RS*G3)*(RM+RK*RS) - (RM+RK*RT)*(Gt3*RT*Ft2 - Ft3*RS*G2)      ...
+                - RL*(Ft2*RS - RT*Ft2);
+            
+            % Calculate the deviation from the Kuprianov--Lukichev b.c.
+            % with spin-active interface terms from Machon et al.
+            dg1  = dg1  + (1/self.interface_left)*(I - g1*gt1)*(L2  - L1*g1);
+            dgt1 = dgt1 + (1/self.interface_left)*(I - gt1*g1)*(Lt2 - Lt1*gt1);
+            
+            dg2  = dg2  - (1/self.interface_right)*(I - g2*gt2)*(R2 - R1*g2);
+            dgt2 = dgt2 - (1/self.interface_right)*(I - gt2*g2)*(Rt2 - Rt1*gt2);
+            
+            % Vectorize the results of the calculations, and return it
+            residue = State.pack(dg1,dgt1,dg2,dgt2);
+        end
         
-        function residue = transparency(self, y1, y2, energy)
+        function residue = boundary_transparent(self, y1, y2, energy)
             % This function takes a Metal object 'self', the position 'x',
             % the current state vector 'y', and an energy as inputs, and
             % calculates the transparent boundary conditions. This function
