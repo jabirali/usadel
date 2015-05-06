@@ -12,7 +12,7 @@
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-14
-% Updated 2015-05-04
+% Updated 2015-05-06
 
 
 classdef State
@@ -133,6 +133,15 @@ classdef State
                       (f(1,2) + f(2,1))/2];
         end
         
+        function result = triplett(self)
+            % Calculate the triplet component of the t.c. Green's function,
+            % i.e. the component proportional to [σ^x,σ^y,σ^z] iσ^y.
+            f = self.eval_ft;
+            result = [(f(2,2) - f(1,1))/2,                ...
+                      (f(1,1) + f(2,2))/2i,               ...
+                      (f(1,2) + f(2,1))/2];
+        end
+        
         function result = srtc(self, exchange)
             % This method returns the short-range triplet component, i.e.
             % the triplet component *along* the exchange field, where the
@@ -140,12 +149,27 @@ classdef State
             unitvec = exchange/(norm(exchange)+1e-16);
             result  = dot(unitvec,self.triplet) .* unitvec;
         end
+        
+        function result = srtct(self, exchange)
+            % This method returns the t.c. short-range triplet component, 
+            % i.e. the component *along* the exchange field, where the
+            % exchange field should be provided as an argument.
+            unitvec = exchange/(norm(exchange)+1e-16);
+            result  = dot(unitvec,self.triplett) .* unitvec;
+        end
 
         function result = lrtc(self, exchange)
             % This method returns the long-range triplet component, i.e.
             % the triplet component *perpendicular* to the exchange field,
             % where the exchange field should be provided as argument.
             result = self.triplet - self.srtc(exchange);
+        end
+        
+        function result = lrtct(self, exchange)
+            % This method returns the t.c. long-range triplet component,
+            % i.e. the component *perpendicular* to the exchange field,
+            % where the exchange field should be provided as argument.
+            result = self.triplett - self.srtct(exchange);
         end
     end
     

@@ -45,9 +45,7 @@ function simulate_ferromagnet(ferromagnet_length, exchange, spinorbit, angle)
     
     % Plot the results
     figure;
-    f.plot_dos;
-    figure;
-    f.plot_dist;
+    f.plot_dos_surf;
     
     % Save the results of the simulation
     save(output);

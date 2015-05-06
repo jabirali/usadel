@@ -38,6 +38,8 @@ classdef Metal < handle
         % Internal properties that will be set and used during simulations
         coeff1  = {};                        % Coefficients in the differential equations for gamma
         coeff2  = {};                        % Coefficients in the differential equations for gamma~
+        jc      = {};                        % Partially evaluated Jacobian functions
+        bc      = {};                        % Partially evaluated boundary conditions
         
         % Properties that determine the simulation behavior
         error_abs = 1e-6;                    % Maximum absolute error when simulating
@@ -65,16 +67,24 @@ classdef Metal < handle
             self.positions = positions;
             self.energies  = energies;
             self.thouless  = thouless;
-            
+
+            % Initialize the internal state to a normal metal
+%             self.states(length(positions), length(energies)) = State;
+%             for i=1:length(positions)
+%                for j=1:length(energies)
+%                    self.states(i,j) = State;
+%                end
+%             end
+
             % Initialize the internal state to a bulk superconductor with
             % superconducting gap 1. This is useful as an initial guess
             % when simulating strong proximity effects in energy units 
             % where the zero-temperature gap is normalized to unity.
             self.states(length(positions), length(energies)) = State;
             for i=1:length(positions)
-                for j=1:length(energies)
-                    self.states(i,j) = Superconductor.Bulk(energies(j), 1, 0);
-                end
+               for j=1:length(energies)
+                   self.states(i,j) = Superconductor.Bulk(energies(j), 1, 0);
+               end
             end
             
             % Set the boundary conditions to vacuum states
@@ -88,8 +98,28 @@ classdef Metal < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function update_coeff(self)
-            % This function updates the vector of coefficients passed to
+            % This function updates the functions and coefficients passed to
             % the functions 'jacobian' and 'boundary' when solving equations.
+            
+            % Partially evaluate the Jacobian matrix and boundary conditions
+            % for the different material energies, and store the resulting 
+            % anonymous functions in an array. These functions are passed on
+            % to bvp6c when solving the equations.
+            self.jc = {};
+            self.bc = {};
+            for m=1:length(self.energies)
+                self.jc{m} = @(x,y) self.jacobian(self,x,y,self.energies(m));
+                if self.transparent
+                    % If 'transparent' is true, use transparent b.c.
+                    self.bc{m} = @(a,b) self.boundary_transparent(self,a,b,self.energies(m));
+                elseif self.spinactive
+                    % If 'spinactive' is true, use spin-active b.c.
+                    self.bc{m} = @(a,b) self.boundary_spinactive(self,a,b,self.energies(m));
+                else
+                    % Else, use standard Kuprianov-Lukichev b.c. instead
+                    self.bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
+                end
+            end
         end
         
         function update_boundary_left(self, other)
@@ -112,26 +142,6 @@ classdef Metal < handle
             % Set the accuracy of the numerical solution
             options = bvpset('AbsTol',self.error_abs,'RelTol',self.error_rel,'Nmax',self.grid_size);
 
-            % Partially evaluate the Jacobian matrix and boundary conditions
-            % for the different material energies, and store the resulting 
-            % anonymous functions in an array. These functions are passed on
-            % to bvp6c when solving the equations.
-            jc = {};
-            bc = {};
-            for m=1:length(self.energies)
-                jc{m} = @(x,y) self.jacobian(self,x,y,self.energies(m));
-                if self.transparent
-                    % If 'transparent' is true, use transparent b.c.
-                    bc{m} = @(a,b) self.boundary_transparent(self,a,b,self.energies(m));
-                elseif self.spinactive
-                    % If 'spinactive' is true, use spin-active b.c.
-                    bc{m} = @(a,b) self.boundary_spinactive(self,a,b,self.energies(m));
-                else
-                    % Else, use standard Kuprianov-Lukichev b.c. instead
-                    bc{m} = @(a,b) self.boundary(self,a,b,self.energies(m));
-                end
-            end
-                
             for m=1:length(self.energies)
                 % Progress information
                 self.print('[ %3.f / %3.f ]  E = %2.4f ', m, length(self.energies), self.energies(m));
@@ -146,7 +156,7 @@ classdef Metal < handle
                 
                 % Solve the differential equation, and evaluate the
                 % solution on the position vector of the metal
-                solution = deval(bvp6c(jc{m},bc{m},initial,options), self.positions);
+                solution = deval(bvp6c(self.jc{m},self.bc{m},initial,options), self.positions);
                 
                 % Update the current state of the system based on the solution
                 for n=1:length(self.positions)
@@ -169,7 +179,7 @@ classdef Metal < handle
                 
             % Plot the current density of states (if 'plot' is set to true)
             if self.plot
-                self.plot_dos;
+                self.plot_dos_surf;
             end
         end
     
@@ -218,7 +228,7 @@ classdef Metal < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         function plot_dos(self)
-            % Calculate the density of states for the system.
+            % Calculate the *mean* density of states for the system.
             % NB: This implementation only *adds* the contribution from
             %     every energy, and does not perform a proper integral!
 
@@ -234,6 +244,87 @@ classdef Metal < handle
             plot(energies, pchip(self.energies, dos, energies));
             xlabel('Energy');
             ylabel('Density of States');
+        end
+
+        function plot_dos_left(self)
+            % Calculate the *left* density of states for the system.
+
+            dos = zeros(length(self.energies), 1);
+            for m=1:length(self.energies)
+                dos(m) = dos(m) + self.states(1,m).eval_ldos;
+            end
+            
+            % Plot a cubic interpolation of the results
+            energies = linspace(self.energies(1), self.energies(end), 100);
+            plot(energies, pchip(self.energies, dos, energies));
+            xlabel('Energy');
+            ylabel('Density of States');
+        end
+
+        function plot_dos_right(self)
+            % Calculate the *right* density of states for the system.
+
+            dos = zeros(length(self.energies), 1);
+            for m=1:length(self.energies)
+                dos(m) = dos(m) + self.states(end,m).eval_ldos;
+            end
+            
+            % Plot a cubic interpolation of the results
+            energies = linspace(self.energies(1), self.energies(end), 100);
+            plot(energies, pchip(self.energies, dos, energies));
+            xlabel('Energy');
+            ylabel('Density of States');
+        end
+        
+        function plot_dos_center(self)
+            % Calculate the *central* density of states for the system.
+
+            dos = zeros(length(self.energies), 1);
+            pos = floor(length(self.positions)/2);
+            for m=1:length(self.energies)
+                dos(m) = dos(m) + self.states(pos,m).eval_ldos;
+            end
+            
+            % Plot a cubic interpolation of the results
+            energies = linspace(self.energies(1), self.energies(end), 100);
+            plot(energies, pchip(self.energies, dos, energies));
+            xlabel('Energy');
+            ylabel('Density of States');
+        end
+        
+        function plot_dos_surf(self)
+            % Calculate the density of states throughout the system.
+            % Note: we assume that we only have data for positive energies,
+            %       and that the negative energy region is symmetric.
+            
+            N = length(self.positions);
+            M = length(self.energies);
+            dos = zeros(N, 2*M-1);
+            for n=1:N
+                dos(n,M) = self.states(n,1).eval_ldos;
+                for m=2:M
+                    dos(n,M-m+1) = self.states(n,m).eval_ldos;
+                    dos(n,M+m-1) = dos(n,M-m+1);
+                end
+            end
+                        
+            % Plot the results
+            surf([fliplr(-self.energies) self.energies(2:end)], self.positions, dos, 'EdgeColor', 'none');
+
+            colormap(parula(256));
+            caxis([0 2]);
+            camlight('headlight');
+            lighting('gouraud');
+            shading('interp');
+            view(-10,30);
+
+            %xlabel('Energy');
+            %ylabel('Position');
+            %zlabel('Density of States');
+            
+            lims = get(gca, 'ZLim');
+            lims = [min(0,lims(1)) max(1.5,lims(2))];
+            set(gca, 'ZLim', lims);
         end
         
         function plot_dist(self)
@@ -325,8 +416,8 @@ classdef Metal < handle
             dg1  = dg1  - (1/self.interface_left)*( eye(2) - g1*gt0 )*N0*(  g1  - g0  );
             dgt1 = dgt1 - (1/self.interface_left)*( eye(2) - gt1*g0 )*Nt0*( gt1 - gt0 );
             
-            dg2  = dg2  - (1/self.interface_right)*( eye(2) - g2*gt3 )*N3*(  g2  - g3  );
-            dgt2 = dgt2 - (1/self.interface_right)*( eye(2) - gt2*g3 )*Nt3*( gt2 - gt3 );
+            dg2  = dg2  - (1/self.interface_right)*( eye(2) - g2*gt3 )*N3*(  g3  - g2  );
+            dgt2 = dgt2 - (1/self.interface_right)*( eye(2) - gt2*g3 )*Nt3*( gt3 - gt2 );
             
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);
@@ -362,23 +453,23 @@ classdef Metal < handle
             % Calculate the Green's functions
             I = eye(2);
             
-            G0  = (I - g0*gt0) \ (eye(2) + g0*gt0);
-            Gt0 = (I - gt0*g0) \ (eye(2) + gt0*g0);
+            G0  = (I - g0*gt0) \ (I + g0*gt0);
+            Gt0 = (I - gt0*g0) \ (I + gt0*g0);
             F0  = (I - g0*gt0) \ (2*g0);
             Ft0 = (I - gt0*g0) \ (2*gt0);
             
-            G1  = (I - g1*gt1) \ (eye(2) + g1*gt1);
-            Gt1 = (I - gt1*g1) \ (eye(2) + gt1*g1);
+            G1  = (I - g1*gt1) \ (I + g1*gt1);
+            Gt1 = (I - gt1*g1) \ (I + gt1*g1);
             F1  = (I - g1*gt1) \ (2*g1);
             Ft1 = (I - gt1*g1) \ (2*gt1);
 
-            G2  = (I - g2*gt2) \ (eye(2) + g2*gt2);
-            Gt2 = (I - gt2*g2) \ (eye(2) + gt2*g2);
+            G2  = (I - g2*gt2) \ (I + g2*gt2);
+            Gt2 = (I - gt2*g2) \ (I + gt2*g2);
             F2  = (I - g2*gt2) \ (2*g2);
             Ft2 = (I - gt2*g2) \ (2*gt2);
 
-            G3  = (I - g3*gt3) \ (eye(2) + g3*gt3);
-            Gt3 = (I - gt3*g3) \ (eye(2) + gt3*g3);
+            G3  = (I - g3*gt3) \ (I + g3*gt3);
+            Gt3 = (I - gt3*g3) \ (I + gt3*g3);
             F3  = (I - g3*gt3) \ (2*g3);
             Ft3 = (I - gt3*g3) \ (2*gt3);
             
@@ -431,11 +522,11 @@ classdef Metal < handle
             
             % Calculate the deviation from the Kuprianov--Lukichev b.c.
             % with spin-active interface terms from Machon et al.
-            dg1  = dg1  + (1/self.interface_left)*(I - g1*gt1)*(L2  - L1*g1);
-            dgt1 = dgt1 + (1/self.interface_left)*(I - gt1*g1)*(Lt2 - Lt1*gt1);
+            dg1  = dg1  + (0.5/self.interface_left)*(I - g1*gt1)*(L2  - L1*g1);
+            dgt1 = dgt1 + (0.5/self.interface_left)*(I - gt1*g1)*(Lt2 - Lt1*gt1);
             
-            dg2  = dg2  - (1/self.interface_right)*(I - g2*gt2)*(R2 - R1*g2);
-            dgt2 = dgt2 - (1/self.interface_right)*(I - gt2*g2)*(Rt2 - Rt1*gt2);
+            dg2  = dg2  - (0.5/self.interface_right)*(I - g2*gt2)*(R2 - R1*g2);
+            dgt2 = dgt2 - (0.5/self.interface_right)*(I - gt2*g2)*(Rt2 - Rt1*gt2);
             
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);

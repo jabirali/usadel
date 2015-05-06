@@ -153,6 +153,9 @@ classdef Superconductor < Metal
             % This function updates the vector of coefficients passed to
             % the functions 'jacobian' and 'boundary' when solving equations.
             
+            % Call the standard 'Metal' version of the method
+            update_coeff@Metal(self);
+            
             % Coefficients in the equations for the Riccati parameter gamma
             self.coeff1{1} = -2i/self.thouless;
             self.coeff1{2} = -SpinVector.Pauli.y/self.thouless;
@@ -176,7 +179,7 @@ classdef Superconductor < Metal
                 
             % Plot the current DOS
             if self.plot
-                self.plot_dos;
+                self.plot_dos_surf;
             end
         end
     end        
@@ -215,49 +218,6 @@ classdef Superconductor < Metal
             dydx = State.pack(dg,d2g,dgt,d2gt);
         end
         
-        function residue = boundary(self, y1, y2, energy)
-            % This function takes a Metal object 'self', the position 'x',
-            % the current state vector 'y', and an energy as inputs, and
-            % calculates the Kuprianov-Lukichev boundary conditions.
-            
-            % State in the material to the left
-            s0   = self.boundary_left(self.energy_index(energy));
-            g0   = s0.g;
-            dg0  = s0.dg;
-            gt0  = s0.gt;
-            dgt0 = s0.dgt;
-            
-            % State at the left end of the material
-            [g1,dg1,gt1,dgt1] = State.unpack(y1);
-            
-            % State at the right end of the material
-            [g2,dg2,gt2,dgt2] = State.unpack(y2);
-            
-            % State in the material to the right
-            s3   = self.boundary_right(self.energy_index(energy));
-            g3   = s3.g;
-            dg3  = s3.dg;
-            gt3  = s3.gt;
-            dgt3 = s3.dgt;
-            
-            % Calculate the normalization matrices
-            N0  = inv( eye(2) - g0*gt0 );
-            Nt0 = inv( eye(2) - gt0*g0 );
-            
-            N3  = inv( eye(2) - g3*gt3 );
-            Nt3 = inv( eye(2) - gt3*g3 );
-            
-            % Calculate the deviation from the Kuprianov--Lukichev b.c.
-            dg1  = dg1  - (1/self.interface_left)*( eye(2) - g1*gt0 )*N0*(  g0  - g1  );
-            dgt1 = dgt1 - (1/self.interface_left)*( eye(2) - gt1*g0 )*Nt0*( gt0 - gt1 );
-            
-            dg2  = dg2  - (1/self.interface_right)*( eye(2) - g2*gt3 )*N3*(  g3  - g2  );
-            dgt2 = dgt2 - (1/self.interface_right)*( eye(2) - gt2*g3 )*Nt3*( gt3 - gt2 );
-            
-            % Vectorize the results of the calculations, and return it
-            residue = State.pack(dg1,dgt1,dg2,dgt2);
-        end
-
         function [gap,phase] = calculate_gap(self, position)
             % This function returns a vector [gap,phase] with the
             % superconducting gap and phase at the given position.

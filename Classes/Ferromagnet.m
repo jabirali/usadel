@@ -89,6 +89,9 @@ classdef Ferromagnet < Metal
             % This function updates the vector of coefficients passed to
             % the functions 'jacobian' and 'boundary' when solving equations.
             
+            % Call the standard 'Metal' version of the method
+            update_coeff@Metal(self);
+            
             % Coefficients in the equations for the Riccati parameter gamma
             self.coeff1{1} = -2i/self.thouless;
             self.coeff1{2} = (-i*self.exchange/self.thouless)*SpinVector.Pauli;
@@ -120,7 +123,7 @@ classdef Ferromagnet < Metal
     
             % Plot the current density of states, if 'plot' is set to 'true'
             if self.plot
-                self.plot_dos;
+                self.plot_dos_surf;
             end
         end
     end        
