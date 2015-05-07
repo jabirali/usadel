@@ -40,6 +40,10 @@ function simulate_bilayer_spinactive(interface_polarization, interface_phase)
     m.debug = 1;
     m.plot  = 0;
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %                       PERFORM THE SIMULATION
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     % Update the internal state of the metal
     m.update;
     

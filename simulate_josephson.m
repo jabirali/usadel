@@ -45,6 +45,10 @@ function simulate_josephson(phase_difference)
     m.debug = 1;
     m.plot  = 0;
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %                       PERFORM THE SIMULATION
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     % Update the internal state of the metal
     m.update;
     

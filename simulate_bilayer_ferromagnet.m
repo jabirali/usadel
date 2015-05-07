@@ -36,6 +36,10 @@ function simulate_bilayer_ferromagnet(exchange_strength, exchange_angle, spinorb
     m.debug = 1;
     m.plot  = 0;
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %                       PERFORM THE SIMULATION
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     % Update the internal state of the metal
     m.update;
     

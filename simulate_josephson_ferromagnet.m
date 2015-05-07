@@ -45,6 +45,10 @@ function simulate_josephson_ferromagnet(phase_difference, exchange_strength, exc
     m.debug = 1;
     m.plot  = 0;
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %                       PERFORM THE SIMULATION
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     % Update the internal state of the metal
     m.update;
     
