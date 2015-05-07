@@ -17,7 +17,7 @@ function check_gap(superconductor_length, ferromagnet_length, strength, exchange
     energies   = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/strength),100)];
 
     % Number of iterations that the system needs to stabilize
-    iterations = 40;
+    iterations = 50;
     
 
 
