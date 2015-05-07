@@ -5,7 +5,7 @@
 % Created 2015-05-06
 % Updated 2015-05-07
 
-function simulate_josephson(phase_difference)
+function simulate_josephson_spinactive(phase_difference, interface_polarization, interface_phase, interface_angle)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                 DEFINE PARAMETERS FOR THE SIMULATION
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,8 +35,15 @@ function simulate_josephson(phase_difference)
 
     % Create a normal metal connected to the superconductors above
     m = Metal(positions, energies, 1);
-    m.interface_left  = 3;
-    m.interface_right = 3;
+    m.spinactive          = 1;
+    m.interface_left      = 3;
+    m.interface_right     = 3;
+    m.magnetization_left  = [cos(+interface_angle/2), sin(+interface_angle/2), 0];
+    m.magnetization_right = [cos(-interface_angle/2), sin(-interface_angle/2), 0];
+    m.polarization_left   = interface_polarization;
+    m.polarization_right  = interface_polarization;
+    m.phaseshift_left     = interface_angle;
+    m.phaseshift_right    = interface_angle;
     m.update_boundary_left(s1);
     m.update_boundary_right(s2);
     

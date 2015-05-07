@@ -1,11 +1,12 @@
 % This defines a data structure that describes the physical state of a
 % metal for a given range of positions and energies. The purpose of this 
 % class is mainly to be used as a base class for more interesting material
-% classes, such as those that describe superconductors and ferromagnets.
+% classes, such as those that describe superconductors and ferromagnets,
+% or to be used in conjunction with such materials in hybrid structures.
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
 % Created 2015-02-23
-% Updated 2015-05-04
+% Updated 2015-05-07
 
 classdef Metal < handle
     properties (GetAccess=public, SetAccess=public)
@@ -316,12 +317,8 @@ classdef Metal < handle
             camlight('headlight');
             lighting('gouraud');
             shading('interp');
-            view(-10,30);
+            view(7.5,30);
 
-            %xlabel('Energy');
-            %ylabel('Position');
-            %zlabel('Density of States');
-            
             lims = get(gca, 'ZLim');
             lims = [min(0,lims(1)) max(1.5,lims(2))];
             set(gca, 'ZLim', lims);
@@ -329,6 +326,7 @@ classdef Metal < handle
         
         function plot_dist(self)
             % Calculate the singlet and triplet distributions.
+            %
             % NB: This implementation only *adds* the contribution from
             %     every energy, and does not perform a proper integral!
 
@@ -522,11 +520,11 @@ classdef Metal < handle
             
             % Calculate the deviation from the Kuprianov--Lukichev b.c.
             % with spin-active interface terms from Machon et al.
-            dg1  = dg1  + (0.5/self.interface_left)*(I - g1*gt1)*(L2  - L1*g1);
-            dgt1 = dgt1 + (0.5/self.interface_left)*(I - gt1*g1)*(Lt2 - Lt1*gt1);
+            dg1  = dg1  + (0.25/self.interface_left)*(I - g1*gt1)*(L2  - L1*g1);
+            dgt1 = dgt1 + (0.25/self.interface_left)*(I - gt1*g1)*(Lt2 - Lt1*gt1);
             
-            dg2  = dg2  - (0.5/self.interface_right)*(I - g2*gt2)*(R2 - R1*g2);
-            dgt2 = dgt2 - (0.5/self.interface_right)*(I - gt2*g2)*(Rt2 - Rt1*gt2);
+            dg2  = dg2  - (0.25/self.interface_right)*(I - g2*gt2)*(R2 - R1*g2);
+            dgt2 = dgt2 - (0.25/self.interface_right)*(I - gt2*g2)*(Rt2 - Rt1*gt2);
             
             % Vectorize the results of the calculations, and return it
             residue = State.pack(dg1,dgt1,dg2,dgt2);

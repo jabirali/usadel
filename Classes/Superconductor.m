@@ -31,6 +31,7 @@ classdef Superconductor < Metal
             % This method constructs a Superconductor instance from a vector
             % of positions, a vector of energies, the Thouless energy, and
             % the strength of the superconductivity (material constant N0V).
+            %
             % Note: for self-consistent solutions to work properly, the energy
             %       vector should extend up to the Debye cutoff cosh(1/N0V).
 
