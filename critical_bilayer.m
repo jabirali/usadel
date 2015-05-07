@@ -171,5 +171,5 @@ function critical_bilayer(superconductor_length, ferromagnet_length, strength, e
     fprintf('Critical temperature: %.6f\nLower limit: %.6f\nUpper limit: %.6f\n:', critical_temperature, lower, upper);
 
     % Save the results to file
-    save(output);
+    %save(output);
 end
