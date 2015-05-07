@@ -13,6 +13,7 @@ function simulate_bilayer_spinactive_sc(interface_polarization, interface_phase)
     % Vectors of positions and energies that will be used in the simulation
     positions     = linspace(0, 1, 150);
     energies      = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/0.2),100)];
+    %energies      = [linspace(0.000,1.500,30)];
     
     % Number of iterations to perform
     iterations    = 30;
@@ -34,6 +35,7 @@ function simulate_bilayer_spinactive_sc(interface_polarization, interface_phase)
     s.magnetization_right = [0,0,1];
     s.polarization_right  = interface_polarization;
     s.phaseshift_right    = interface_phase;
+    %s.locked              = true;
     
     % Create a normal metal [d=ξ]
     m = Metal(positions, energies, 1/1^2);
@@ -56,6 +58,7 @@ function simulate_bilayer_spinactive_sc(interface_polarization, interface_phase)
     %                       PERFORM THE SIMULATION
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    tic;
     dosM = zeros(1,length(energies));
     dosS = zeros(1,length(energies));
     for n=1:iterations
