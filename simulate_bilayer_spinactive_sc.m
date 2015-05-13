@@ -11,13 +11,9 @@ function simulate_bilayer_spinactive_sc(interface_polarization, interface_phase)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Vectors of positions and energies that will be used in the simulation
-    positions     = linspace(0, 1, 150);
-    energies      = [linspace(0.000,1.500,500) linspace(1.501,cosh(1/0.2),100)];
-    %energies      = [linspace(0.000,1.500,30)];
-    
-    % Number of iterations to perform
-    iterations    = 30;
-    
+    positions     = linspace(0, 1, 151);
+    energies      = [linspace(0.001,1.500,501) linspace(1.501,cosh(1/0.2),101)];
+        
     % Filename where results will be stored
     output = 'simulate_bilayer_spinactive_sc.dat';
 
@@ -53,38 +49,50 @@ function simulate_bilayer_spinactive_sc(interface_polarization, interface_phase)
     m.delay = 0;
     m.debug = 1;
     m.plot  = 0;
+    
+    % These variables keep track of the density of states 
+    dosM = zeros(1,length(energies));
+    dosS = zeros(1,length(energies));
+    
+    dosM0 = ones(1,length(energies));
+    dosS0 = ones(1,length(energies));
 
+    residue = 1;
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                       PERFORM THE SIMULATION
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     tic;
-    dosM = zeros(1,length(energies));
-    dosS = zeros(1,length(energies));
-    for n=1:iterations
+    while residue > 1e-3
         % Status information
-        fprintf('[ %3d / %3d ] [ Time: %2d min ] [ Gap: %.6f ]\n',  n, iterations, floor(toc/60), s.gap_max);
+        fprintf('[ Time: %2d min ] [ Gap: %.4f ] [ Residue: %.4f ]\n',  floor(toc/60), s.gap_max, residue);
 
         % Update the internal state of the normal metal
         m.update_boundary_left(s);
         m.update;
         
         % Calculate the density of states in the normal metal [left end]
+        dosM0 = dosM;
         for n=1:length(energies)
             dosM(n) = m.states(1,n).eval_ldos;
         end
-        disp(dosM);
+        fprintf('[ ZEP in metal: %.6f ]\n\n', dosM(1));
     
         % Update the internal state of the superconductor
         s.update_boundary_right(m);
         s.update;
 
         % Calculate the density of states in the superconductor [right end]
+        dosS0 = dosS;
         for n=1:length(energies)
             dosS(n) = s.states(end,n).eval_ldos;
         end
-        disp(dosS);
+        fprintf('[ ZEP in superconductor: %.6f ]\n\n', dosS(1));
 
+        % Update the residue
+        residue = max(max(abs(dosM-dosM0)),max(abs(dosS-dosS0)));
+        
         % Save the results of the simulation
         save(output);
     end
