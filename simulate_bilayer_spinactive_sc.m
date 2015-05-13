@@ -41,6 +41,13 @@ function simulate_bilayer_spinactive_sc(interface_polarization, interface_phase)
     m.polarization_left  = interface_polarization;
     m.phaseshift_left    = interface_phase;
 
+    % Set the metal state
+    for N=1:length(positions)
+        for M=1:length(energies)
+            m.states(N,M) = State;
+        end
+    end
+    
     % This enables or disables various debugging options
     s.delay = 0;
     s.debug = 1;
