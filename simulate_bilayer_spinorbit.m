@@ -1,21 +1,20 @@
-% This script simulates the proximity effect in a ferromagnet connected
-% to two superconductors with a constant phase difference between them.
+% This script simulates the proximity effect in a ferromagnet with SOC.
 %
 % Written by Jabir Ali Ouassou <jabirali@switzerlandmail.ch>
-% Created 2015-05-06
+% Created 2015-02-06
 % Updated 2015-05-07
 
-function simulate_josephson_ferromagnet(phase_difference, exchange_strength, exchange_angle, spinorbit_strength, spinorbit_angle)
+function simulate_bilayer_spinorbit(exchange_strength, exchange_angle, spinorbit_strength, spinorbit_angle)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                 DEFINE PARAMETERS FOR THE SIMULATION
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Vectors of positions and energies that will be used in the simulation
     positions     = linspace(0.0, 1.0, 100);
-    energies      = linspace(0.0, 1.5,  25);
+    energies      = linspace(0.0, 1.5,  26);
     
     % Filename where results will be stored
-    output = 'simulate_josephson_ferromagnet.dat';
+    output = 'simulate_bilayer_spinorbit.dat';
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                   PREPARATIONS FOR THE SIMULATION
@@ -24,21 +23,13 @@ function simulate_josephson_ferromagnet(phase_difference, exchange_strength, exc
     % Make sure that all required classes and methods are in the current path
     initialize;
     
-    % Create two superconductors with 'phase_difference' between them
-    s1 = Superconductor([0], energies, 1, 0.2);
-    s1.complex = true;
-    s1.phase_set(-phase_difference/2);
+    % Create a superconductor
+    s = Superconductor([0], energies, 1, 0.2);
     
-    s2 = Superconductor([0], energies, 1, 0.2);
-    s2.complex = true;
-    s2.phase_set(+phase_difference/2);
-
-    % Create a normal metal connected to the superconductors above
+    % Create a ferromagnet connected to the superconductor above
     m = Ferromagnet(positions, energies, 1, [exchange_strength*cos(exchange_angle), exchange_strength*sin(exchange_angle), 0], SpinVector.RashbaDresselhaus(spinorbit_strength, spinorbit_angle));
-    m.interface_left  = 3;
-    m.interface_right = 3;
-    m.update_boundary_left(s1);
-    m.update_boundary_right(s2);
+    m.interface_left = 3;
+    m.update_boundary_left(s);
     
     % This enables or disables various debugging options
     m.delay = 0;
