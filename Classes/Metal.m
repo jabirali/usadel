@@ -228,67 +228,72 @@ classdef Metal < handle
         % Define methods for printing and plotting the internal state
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        function plot_dos(self)
-            % Calculate the *mean* density of states for the system.
-            % NB: This implementation only *adds* the contribution from
-            %     every energy, and does not perform a proper integral!
-
-            dos = zeros(length(self.energies), 1);
-            for m=1:length(self.energies)
-                for n=1:length(self.positions)
-                    dos(m) = dos(m) + self.states(n,m).eval_ldos/length(self.positions);
-                end
-            end
-            
-            % Plot a cubic interpolation of the results
-            energies = linspace(self.energies(1), self.energies(end), 100);
-            plot(energies, pchip(self.energies, dos, energies));
-            xlabel('Energy');
-            ylabel('Density of States');
-        end
-
         function plot_dos_left(self)
             % Calculate the *left* density of states for the system.
+            % Note: we assume that we only have data for positive energies,
+            %       and that the negative energy region is symmetric.
 
-            dos = zeros(length(self.energies), 1);
-            for m=1:length(self.energies)
-                dos(m) = dos(m) + self.states(1,m).eval_ldos;
+            N = length(self.positions);
+            M = length(self.energies);
+            dos = zeros(2*M-1);
+            erg = zeros(2*M-1);
+            for m=1:M
+                erg(M-m+1) = -self.energies(m);
+                dos(M-m+1) = self.states(1,m).eval_ldos;
+                
+                erg(M+m-1) = self.energies(m);
+                dos(M+m-1) = dos(M-m+1);
             end
             
-            % Plot a cubic interpolation of the results
-            energies = linspace(self.energies(1), self.energies(end), 100);
-            plot(energies, pchip(self.energies, dos, energies));
+            % Plot the results
+            area(erg, dos);
             xlabel('Energy');
             ylabel('Density of States');
         end
-
+        
         function plot_dos_right(self)
             % Calculate the *right* density of states for the system.
+            % Note: we assume that we only have data for positive energies,
+            %       and that the negative energy region is symmetric.
 
-            dos = zeros(length(self.energies), 1);
-            for m=1:length(self.energies)
-                dos(m) = dos(m) + self.states(end,m).eval_ldos;
+            N = length(self.positions);
+            M = length(self.energies);
+            dos = zeros(2*M-1);
+            erg = zeros(2*M-1);
+            for m=1:M
+                erg(M-m+1) = -self.energies(m);
+                dos(M-m+1) = self.states(end,m).eval_ldos;
+                
+                erg(M+m-1) = self.energies(m);
+                dos(M+m-1) = dos(M-m+1);
             end
             
-            % Plot a cubic interpolation of the results
-            energies = linspace(self.energies(1), self.energies(end), 100);
-            plot(energies, pchip(self.energies, dos, energies));
+            % Plot the results
+            area(erg, dos);
             xlabel('Energy');
             ylabel('Density of States');
         end
         
         function plot_dos_center(self)
             % Calculate the *central* density of states for the system.
+            % Note: we assume that we only have data for positive energies,
+            %       and that the negative energy region is symmetric.
 
-            dos = zeros(length(self.energies), 1);
+            N = length(self.positions);
+            M = length(self.energies);
+            dos = zeros(2*M-1);
+            erg = zeros(2*M-1);
             pos = floor(length(self.positions)/2);
-            for m=1:length(self.energies)
-                dos(m) = dos(m) + self.states(pos,m).eval_ldos;
+            for m=1:M
+                erg(M-m+1) = -self.energies(m);
+                dos(M-m+1) = self.states(pos,m).eval_ldos;
+                
+                erg(M+m-1) = self.energies(m);
+                dos(M+m-1) = dos(M-m+1);
             end
             
-            % Plot a cubic interpolation of the results
-            energies = linspace(self.energies(1), self.energies(end), 100);
-            plot(energies, pchip(self.energies, dos, energies));
+            % Plot the results
+            area(erg, dos);
             xlabel('Energy');
             ylabel('Density of States');
         end
@@ -314,13 +319,13 @@ classdef Metal < handle
 
             colormap(parula(256));
             caxis([0 2]);
-            camlight('headlight');
-            lighting('gouraud');
+            %camlight('headlight');
+            %lighting('gouraud');
             shading('interp');
             view(7.5,30);
 
             lims = get(gca, 'ZLim');
-            lims = [min(0,lims(1)) max(1.5,lims(2))];
+            lims = [0, max(1.5,lims(2))];
             set(gca, 'ZLim', lims);
         end
         
