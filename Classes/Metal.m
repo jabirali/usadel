@@ -69,29 +69,38 @@ classdef Metal < handle
             self.energies  = energies;
             self.thouless  = thouless;
 
-            % Initialize the internal state to a normal metal
-%             self.states(length(positions), length(energies)) = State;
-%             for i=1:length(positions)
-%                for j=1:length(energies)
-%                    self.states(i,j) = State;
-%                end
-%             end
+            % Initialize the internal state of the metal
+            self.states(length(self.positions), length(self.energies)) = State;
+            self.init_superconductor;
 
-            % Initialize the internal state to a bulk superconductor with
-            % superconducting gap 1. This is useful as an initial guess
-            % when simulating strong proximity effects in energy units 
-            % where the zero-temperature gap is normalized to unity.
-            self.states(length(positions), length(energies)) = State;
-            for i=1:length(positions)
-               for j=1:length(energies)
-                   self.states(i,j) = Superconductor.Bulk(energies(j), 1, 0);
-               end
-            end
-            
             % Set the boundary conditions to vacuum states
             self.boundary_left(length(energies))  = State;
             self.boundary_right(length(energies)) = State;
         end
+
+        function init_metal(self)
+            % Initialize the internal state to a normal metal. This is useful
+            % as an initial guess when simulating *weak* proximity effects.
+            for i=1:length(self.positions)
+               for j=1:length(self.energies)
+                   self.states(i,j) = State;
+               end
+            end
+        end
+        
+        function init_superconductor(self)
+            % Initialize the internal state to a bulk superconductor with
+            % superconducting gap 1. This is useful as an initial guess
+            % when simulating *strong* proximity effects in energy units 
+            % where the zero-temperature gap is normalized to unity.
+            for i=1:length(self.positions)
+               for j=1:length(self.energies)
+                   self.states(i,j) = Superconductor.Bulk(self.energies(j), 1, 0);
+               end
+            end
+        end
+            
+
 
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,6 +246,7 @@ classdef Metal < handle
             M = length(self.energies);
             dos = zeros(2*M-1);
             erg = zeros(2*M-1);
+           
             for m=1:M
                 erg(M-m+1) = -self.energies(m);
                 dos(M-m+1) = self.states(1,m).eval_ldos;
@@ -246,9 +256,12 @@ classdef Metal < handle
             end
             
             % Plot the results
-            area(erg, dos);
-            xlabel('Energy');
-            ylabel('Density of States');
+            plot(erg, dos);
+            xlabel('\epsilon/\Delta_0')
+            ylabel('N/N_0')
+            set(gca, 'XTick', -20:20);
+            set(gca, 'YTick', -20:20);
+            set(gca, 'YLim',  [0 2]);
         end
         
         function plot_dos_right(self)
@@ -269,9 +282,12 @@ classdef Metal < handle
             end
             
             % Plot the results
-            area(erg, dos);
-            xlabel('Energy');
-            ylabel('Density of States');
+            plot(erg, dos);
+            xlabel('\epsilon/\Delta_0')
+            ylabel('N/N_0')
+            set(gca, 'XTick', -20:20);
+            set(gca, 'YTick', -20:20);
+            set(gca, 'YLim',  [0 2]);
         end
         
         function plot_dos_center(self)
@@ -293,9 +309,12 @@ classdef Metal < handle
             end
             
             % Plot the results
-            area(erg, dos);
-            xlabel('Energy');
-            ylabel('Density of States');
+            plot(erg, dos);
+            xlabel('\epsilon/\Delta_0')
+            ylabel('N/N_0')
+            set(gca, 'XTick', -20:20);
+            set(gca, 'YTick', -20:20);
+            set(gca, 'YLim',  [0 2]);
         end
         
         function plot_dos_surf(self)
@@ -316,17 +335,15 @@ classdef Metal < handle
                         
             % Plot the results
             surf([fliplr(-self.energies) self.energies(2:end)], self.positions, dos, 'EdgeColor', 'none');
-
+            shading('interp');
             colormap(parula(256));
             caxis([0 2]);
-            %camlight('headlight');
-            %lighting('gouraud');
-            shading('interp');
             view(7.5,30);
-
-            lims = get(gca, 'ZLim');
-            lims = [0, max(1.5,lims(2))];
-            set(gca, 'ZLim', lims);
+            
+            set(gca, 'XTick', -20:20);
+            set(gca, 'YTick', -20:20);
+            set(gca, 'ZTick', -20:20);
+            set(gca, 'ZLim',  [0 2]);
         end
         
         function plot_dist(self)
