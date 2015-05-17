@@ -258,10 +258,11 @@ classdef Metal < handle
             % Plot the results
             plot(erg, dos);
             xlabel('\epsilon/\Delta_0')
-            ylabel('N/N_0')
+            ylabel('D(\epsilon)')
             set(gca, 'XTick', -20:20);
             set(gca, 'YTick', -20:20);
-            set(gca, 'YLim',  [0 2]);
+            set(gca, 'XLim',  [-2 2]);
+            set(gca, 'YLim',  [ 0 2]);
         end
         
         function plot_dos_right(self)
@@ -284,9 +285,10 @@ classdef Metal < handle
             % Plot the results
             plot(erg, dos);
             xlabel('\epsilon/\Delta_0')
-            ylabel('N/N_0')
+            ylabel('D(\epsilon)')
             set(gca, 'XTick', -20:20);
             set(gca, 'YTick', -20:20);
+            set(gca, 'XLim',  [-2 2]);
             set(gca, 'YLim',  [0 2]);
         end
         
@@ -311,9 +313,10 @@ classdef Metal < handle
             % Plot the results
             plot(erg, dos);
             xlabel('\epsilon/\Delta_0')
-            ylabel('N/N_0')
+            ylabel('D(\epsilon)')
             set(gca, 'XTick', -20:20);
             set(gca, 'YTick', -20:20);
+            set(gca, 'XLim',  [-2 2]);
             set(gca, 'YLim',  [0 2]);
         end
         
@@ -343,7 +346,8 @@ classdef Metal < handle
             set(gca, 'XTick', -20:20);
             set(gca, 'YTick', -20:20);
             set(gca, 'ZTick', -20:20);
-            set(gca, 'ZLim',  [0 2]);
+            set(gca, 'XLim',  [-2 2 ]);
+            set(gca, 'ZLim',  [ 0 2 ]);
         end
         
         function plot_dist(self)

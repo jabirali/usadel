@@ -11,8 +11,8 @@ function simulate_josephson(phase_difference)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Vectors of positions and energies that will be used in the simulation
-    positions     = linspace(0.0, 1.0, 100);
-    energies      = linspace(0.0, 1.5,  25);
+    positions     = linspace(0.0, 1.0, 50);
+    energies      = linspace(0.0, 2.0, 50);
     
     % Filename where results will be stored
     output = 'simulate_josephson.dat';
@@ -55,6 +55,8 @@ function simulate_josephson(phase_difference)
     % Plot the results
     figure;
     m.plot_dos_surf;
+    figure;
+    m.plot_dos_center;
     
     % Save the results of the simulation
     save(output);

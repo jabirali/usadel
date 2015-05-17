@@ -11,7 +11,7 @@ function simulate_bilayer()
 
     % Vectors of positions and energies that will be used in the simulation
     positions     = linspace(0.0, 1.0, 50);
-    energies      = linspace(0.0, 2.0, 100);
+    energies      = linspace(0.0, 2.0, 50);
     
     % Filename where results will be stored
     output = 'simulate_bilayer.dat';
@@ -47,7 +47,7 @@ function simulate_bilayer()
     figure;
     m.plot_dos_surf;
     figure;
-    m.plot_dos_left;
+    m.plot_dos_center;
     
     % Save the results of the simulation
     save(output);
