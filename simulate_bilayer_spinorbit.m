@@ -27,7 +27,7 @@ function simulate_bilayer_spinorbit(exchange_strength, exchange_angle, spinorbit
     s = Superconductor([0], energies, 1, 0.2);
     
     % Create a ferromagnet connected to the superconductor above
-    m = Ferromagnet(positions, energies, 1, [exchange_strength*cos(exchange_angle), exchange_strength*sin(exchange_angle), 0], SpinVector.RashbaDresselhaus(spinorbit_strength, spinorbit_angle));
+    m = Ferromagnet(positions, energies, 1/0.5^2, [exchange_strength*cos(exchange_angle), exchange_strength*sin(exchange_angle), 0], SpinVector.RashbaDresselhaus(spinorbit_strength, spinorbit_angle));
     m.interface_left = 3;
     m.update_boundary_left(s);
     

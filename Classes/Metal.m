@@ -251,6 +251,10 @@ classdef Metal < handle
                 erg(M-m+1) = -self.energies(m);
                 dos(M-m+1) = self.states(1,m).eval_ldos;
                 
+                if ~self.debug && dos(M-m+1) < 0
+                    dos(M-m+1) = 1e3;
+                end
+                                
                 erg(M+m-1) = self.energies(m);
                 dos(M+m-1) = dos(M-m+1);
             end
@@ -277,6 +281,10 @@ classdef Metal < handle
             for m=1:M
                 erg(M-m+1) = -self.energies(m);
                 dos(M-m+1) = self.states(end,m).eval_ldos;
+                
+                if ~self.debug && dos(M-m+1) < 0
+                    dos(M-m+1) = 1e3;
+                end
                 
                 erg(M+m-1) = self.energies(m);
                 dos(M+m-1) = dos(M-m+1);
@@ -306,6 +314,10 @@ classdef Metal < handle
                 erg(M-m+1) = -self.energies(m);
                 dos(M-m+1) = self.states(pos,m).eval_ldos;
                 
+                if ~self.debug && dos(M-m+1) < 0
+                    dos(M-m+1) = 1e3;
+                end
+                
                 erg(M+m-1) = self.energies(m);
                 dos(M+m-1) = dos(M-m+1);
             end
@@ -332,6 +344,9 @@ classdef Metal < handle
                 dos(n,M) = self.states(n,1).eval_ldos;
                 for m=2:M
                     dos(n,M-m+1) = self.states(n,m).eval_ldos;
+                    if ~self.debug && dos(n,M-m+1) < 0
+                        dos(n,M-m+1) = 1e3;
+                    end
                     dos(n,M+m-1) = dos(n,M-m+1);
                 end
             end
