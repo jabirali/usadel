@@ -1,4 +1,5 @@
 MIT License
+===========
 
 Copyright (c) 2015 Jabir Ali Ouassou
 
